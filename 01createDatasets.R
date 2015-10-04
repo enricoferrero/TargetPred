@@ -56,7 +56,8 @@ transmembrane_domain <- createBooleanFeature(genes, "transmembrane_domain")
 signal_domain <- createBooleanFeature(genes, "signal_domain")
 ncoils <- createBooleanFeature(genes, "ncoils")
 interpro <- createBooleanFeature(genes, "interpro")
-go_id <- createBooleanFeature(genes, "go_id")
+#go_id <- createBooleanFeature(genes, "go_id")
+goslim_goa_accession <- createBooleanFeature(genes, "goslim_goa_accession")
 reactome <- createBooleanFeature(genes, "reactome")
 mmusculus_homolog_perc_id <- createNumericFeature(genes, "mmusculus_homolog_perc_id")
 drerio_homolog_perc_id <- createNumericFeature(genes, "drerio_homolog_perc_id")
@@ -74,7 +75,8 @@ completeset <- cbind(genes,
                  signal_domain[2:ncol(signal_domain)],
                  ncoils[2:ncol(ncoils)],
                  interpro[2:ncol(interpro)],
-                 go_id[2:ncol(go_id)],
+                 #go_id[2:ncol(go_id)],
+                 goslim_goa_accession[2:ncol(goslim_goa_accession)],
                  reactome[2:ncol(reactome)],
                  mmusculus_homolog_perc_id[2:ncol(mmusculus_homolog_perc_id)],
                  drerio_homolog_perc_id[2:ncol(drerio_homolog_perc_id)],
@@ -90,7 +92,7 @@ targetpedia <- getBM(
                  attributes="ensembl_gene_id",
                  filters=c("entrezgene", "chromosome_name", "biotype"),
                  values=list(targetpedia$Target_EntrezGeneId, chr, type),
-                 mart=mart)
+                 mart=human)
 
 # read pharmaprojects data for target information
 pharmaprojects <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/pipeline/pipeline_triples.txt")
@@ -98,7 +100,7 @@ pharmaprojects <- getBM(
                         attributes="ensembl_gene_id",
                         filters=c("entrezgene", "chromosome_name", "biotype"),
                         values=list(pharmaprojects$Target_EntrezGeneId, chr, type),
-                        mart=mart)
+                        mart=human)
 
 # positive cases: these are targets according to targetpedia and/or pharmaprojects
 positive <- unique(rbind(targetpedia, pharmaprojects))
@@ -110,9 +112,11 @@ unknown <- completeset[!completeset$ensembl_gene_id %in% positive$ensembl_gene_i
 unknown <- unknown[sample(nrow(unknown), 2*nrow(positive)), ]
 unknown$target <- 0
 
+# dataset is made of positive and unknown cases
+# will be splitted into traing and test sets
 dataset <- rbind(positive, unknown)
 saveRDS(dataset, file.path("../data/dataset.rds"))
 
-predictionset <- completeset[!completeset$ensembl_gene_id %in% datasetset$ensembl_gene_id, ]
-saveRDS(predictionset, file.path("../data/predicitionset.rds")
-
+# prediction set will be kept for the actual prediction
+predictionset <- completeset[!completeset$ensembl_gene_id %in% dataset$ensembl_gene_id, ]
+saveRDS(predictionset, file.path("../data/predicitionset.rds"))
