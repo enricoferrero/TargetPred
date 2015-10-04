@@ -21,6 +21,7 @@ createNumericFeature <- function(genes, attribute, fun=median, mart=ensembl) {
     names(feat) <- c("ensembl_gene_id", attribute)
     feat <- merge(feat, genes, by="ensembl_gene_id", all=TRUE)
     feat <- feat[order(feat$ensembl_gene_id), , drop=FALSE]
+    feat[is.na(feat)] <- 0
     feat[2:ncol(feat)] <- lapply(feat[2:ncol(feat)], as.numeric)
     return(feat)
 }
@@ -37,6 +38,7 @@ createFactorFeature <- function(genes, attribute, mart=ensembl) {
     feat <- reshape(feat, idvar="ensembl_gene_id", timevar=attribute, direction="wide")
     feat <- merge(feat, genes, by="ensembl_gene_id", all=TRUE)
     feat <- feat[order(feat$ensembl_gene_id), , drop=FALSE]
+    feat[is.na(feat)] <- 0
     feat[2:ncol(feat)] <- lapply(feat[2:ncol(feat)], as.factor)
     return(feat)
 }
@@ -85,8 +87,7 @@ completeset <- cbind(genes,
                  go_id[2:ncol(go_id)],
                  reactome[2:ncol(reactome)]
                  )
-completeset[is.na(completeset)] <- 0
-names(completeset) <- gsub("[-:]", "", names(completeset))
+names(completeset) <- gsub("[-:]", "_", names(completeset))
 
 # read targetpedia data for target information
 targetpedia <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/targetpedia/targetpedia_triples.txt")
