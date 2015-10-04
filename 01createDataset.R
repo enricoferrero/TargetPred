@@ -1,93 +1,90 @@
-library(RSQLite)
+### libraries ###
 library(biomaRt)
 
-db <- dbConnect(SQLite(), dbname="../data/targetpred.db")
-
-mart <- useMart("ensembl", "hsapiens_gene_ensembl")
+### options ###
+set.seed(16)
+human <- useMart("ensembl", "hsapiens_gene_ensembl")
 chr <- c(1:22, "X", "Y", "MT")
 #chr <- 21
 type="protein_coding"
 
-# genes
+### functions ###
+createBooleanFeature <- function(genes, attribute, mart=human) {
+    feat <- getBM(
+                  attributes=c("ensembl_gene_id", attribute),
+                  filters="ensembl_gene_id",
+                  values=genes,
+                  mart=mart)
+    feat[feat==""] <- NA
+    feat <- na.omit(feat)
+    feat$feat <- 1
+    feat <- reshape(feat, idvar="ensembl_gene_id", timevar=attribute, direction="wide")
+    feat <- merge(feat, genes, by="ensembl_gene_id", all=TRUE)
+    feat <- feat[order(feat$ensembl_gene_id), , drop=FALSE]
+}
+
+createNumericFeature <- function(genes, attribute, fun=median, mart=human) {
+    feat <- getBM(
+                  attributes=c("ensembl_gene_id", attribute),
+                  filters="ensembl_gene_id",
+                  values=genes,
+                  mart=mart)
+    feat[feat==""] <- NA
+    feat <- na.omit(feat)
+    feat <- aggregate(feat[attribute], by=list(feat$ensembl_gene_id), FUN=fun)
+    names(feat) <- c("ensembl_gene_id", attribute)
+    feat <- merge(feat, genes, by="ensembl_gene_id", all=TRUE)
+    feat <- feat[order(feat$ensembl_gene_id), , drop=FALSE]
+}
+
+### data ###
+
+# get all protein coding genes
 genes <- getBM(
                attributes="ensembl_gene_id",
                filters=c("chromosome_name", "biotype"),
                values=list(chr, type),
-               mart=mart)
-genes[genes==""] <- NA
-dbWriteTable(db, "genes", genes, overwrite=TRUE)
+               mart=human)
+genes <- genes[order(genes$ensembl_gene_id), , drop=FALSE]
 
-# features
-features <- getBM(
-                 attributes=c("ensembl_gene_id",
-                              "gene_biotype",
-                              "transcript_length",
-                              "transcript_count",
-                              "percentage_gc_content"),
-                 filters=c("chromosome_name", "biotype"),
-                 values=list(chr, type),
-                 mart=mart)
-features[features==""] <- NA
-dbWriteTable(db, "features", features, overwrite=TRUE)
+# create numeric and boolean features
+transcript_length <- createNumericFeature(genes, "transcript_length")
+transcript_count <- createNumericFeature(genes, "transcript_count")
+percentage_gc_content <- createNumericFeature(genes, "percentage_gc_content")
+low_complexity <- createBooleanFeature(genes, "low_complexity")
+transmembrane_domain <- createBooleanFeature(genes, "transmembrane_domain")
+signal_domain <- createBooleanFeature(genes, "signal_domain")
+ncoils <- createBooleanFeature(genes, "ncoils")
+interpro <- createBooleanFeature(genes, "interpro")
+go_id <- createBooleanFeature(genes, "go_id")
+reactome <- createBooleanFeature(genes, "reactome")
+mmusculus_homolog_perc_id <- createNumericFeature(genes, "mmusculus_homolog_perc_id")
+drerio_homolog_perc_id <- createNumericFeature(genes, "drerio_homolog_perc_id")
+dmelanogaster_homolog_perc_id <- createNumericFeature(genes, "dmelanogaster_homolog_perc_id")
+celegans_homolog_perc_id <- createNumericFeature(genes, "celegans_homolog_perc_id")
+scerevisiae_homolog_perc_id <- createNumericFeature(genes, "scerevisiae_homolog_perc_id")
 
-# domains
-domains <- getBM(
-                 attributes=c("ensembl_gene_id",
-                              "interpro"),
-                 filters=c("chromosome_name", "biotype"),
-                 values=list(chr, type),
-                 mart=mart)
-domains[domains==""] <- NA
-dbWriteTable(db, "domains", domains, overwrite=TRUE)
+# generate complete set with all features
+completeset <- cbind(genes,
+                 transcript_length[2:ncol(transcript_length)],
+                 transcript_count[2:ncol(transcript_count)],
+                 percentage_gc_content[2:ncol(percentage_gc_content)],
+                 low_complexity[2:ncol(low_complexity)],
+                 transmembrane_domain[2:ncol(transmembrane_domain)],
+                 signal_domain[2:ncol(signal_domain)],
+                 ncoils[2:ncol(ncoils)],
+                 interpro[2:ncol(interpro)],
+                 go_id[2:ncol(go_id)],
+                 reactome[2:ncol(reactome)],
+                 mmusculus_homolog_perc_id[2:ncol(mmusculus_homolog_perc_id)],
+                 drerio_homolog_perc_id[2:ncol(drerio_homolog_perc_id)],
+                 dmelanogaster_homolog_perc_id[2:ncol(dmelanogaster_homolog_perc_id)],
+                 celegans_homolog_perc_id[2:ncol(celegans_homolog_perc_id)],
+                 scerevisiae_homolog_perc_id[2:ncol(scerevisiae_homolog_perc_id)]
+                 )
+completeset[is.na(completeset)] <- 0
 
-# structures
-structures <- getBM(
-                 attributes=c("ensembl_gene_id",
-                              "low_complexity",
-                              "transmembrane_domain",
-                              "signal_domain",
-                              "ncoils"),
-                 filters=c("chromosome_name", "biotype"),
-                 values=list(chr, type),
-                 mart=mart)
-structures[structures==""] <- NA
-dbWriteTable(db, "structures", structures, overwrite=TRUE)
-
-# functions
-functions <- getBM(
-                 attributes=c("ensembl_gene_id",
-                              "go_id"),
-                 filters=c("chromosome_name", "biotype"),
-                 values=list(chr, type),
-                 mart=mart)
-functions[functions==""] <- NA
-dbWriteTable(db, "functions", functions, overwrite=TRUE)
-
-# pathways
-pathways <- getBM(
-                 attributes=c("ensembl_gene_id",
-                              "reactome"),
-                 filters=c("chromosome_name", "biotype"),
-                 values=list(chr, type),
-                 mart=mart)
-pathways[pathways==""] <- NA
-dbWriteTable(db, "pathways", pathways, overwrite=TRUE)
-
-# homologs
-homologs <- getBM(
-                 attributes=c("ensembl_gene_id",
-                              "mmusculus_homolog_perc_id",
-                              "drerio_homolog_perc_id",
-                              "dmelanogaster_homolog_perc_id",
-                              "celegans_homolog_perc_id",
-                              "scerevisiae_homolog_perc_id"),
-                 filters=c("chromosome_name", "biotype"),
-                 values=list(chr, type),
-                 mart=mart)
-homologs[homologs==""] <- NA
-dbWriteTable(db, "homologs", homologs, overwrite=TRUE)
-
-# targets
+# read targetpedia data for target information
 targetpedia <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/targetpedia/targetpedia_triples.txt")
 targetpedia <- getBM(
                  attributes="ensembl_gene_id",
@@ -95,29 +92,27 @@ targetpedia <- getBM(
                  values=list(targetpedia$Target_EntrezGeneId, chr, type),
                  mart=mart)
 
+# read pharmaprojects data for target information
 pharmaprojects <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/pipeline/pipeline_triples.txt")
 pharmaprojects <- getBM(
-                 attributes="ensembl_gene_id",
-                 filters=c("entrezgene", "chromosome_name", "biotype"),
-                 values=list(pharmaprojects$Target_EntrezGeneId, chr, type),
-                 mart=mart)
+                        attributes="ensembl_gene_id",
+                        filters=c("entrezgene", "chromosome_name", "biotype"),
+                        values=list(pharmaprojects$Target_EntrezGeneId, chr, type),
+                        mart=mart)
 
-targets <- unique(rbind(targetpedia, pharmaprojects))
-targets$target <- 1
-targets <- merge(targets, genes, by="ensembl_gene_id", all=TRUE)
-targets[is.na(targets)] <- 0
-dbWriteTable(db, "targets", targets, overwrite=TRUE)
+# positive cases: these are targets according to targetpedia and/or pharmaprojects
+positive <- unique(rbind(targetpedia, pharmaprojects))
+positive <- completeset[completeset$ensembl_gene_id %in% positive$ensembl_gene_id, ]
+positive$target <- 1
 
-dataset <- dbGetQuery(db, "
-                      select * from genes g
-                      left join features f1 on g.ensembl_gene_id = f1.ensembl_gene_id
-                      left join domains d on g.ensembl_gene_id = d.ensembl_gene_id
-                      left join structures s on g.ensembl_gene_id = s.ensembl_gene_id
-                      left join functions f2 on g.ensembl_gene_id = f2.ensembl_gene_id
-                      left join pathways p on g.ensembl_gene_id = p.ensembl_gene_id
-                      left join homologs h on g.ensembl_gene_id = h.ensembl_gene_id
-                      left join targets t on g.ensembl_gene_id = t.ensembl_gene_id
-                      ;")
-# remove duplicated columns
-dataset <- dataset[!duplicated(lapply(dataset, summary))]
-dbWriteTable(db, "dataset", dataset, overwrite=TRUE)
+# unknown cases: it's not known whether these are targets or not
+unknown <- completeset[!completeset$ensembl_gene_id %in% positive$ensembl_gene_id, ]
+unknown <- unknown[sample(nrow(unknown), 2*nrow(positive)), ]
+unknown$target <- 0
+
+dataset <- rbind(positive, unknown)
+saveRDS(dataset, file.path("../data/dataset.rds"))
+
+predictionset <- completeset[!completeset$ensembl_gene_id %in% datasetset$ensembl_gene_id, ]
+saveRDS(predictionset, file.path("../data/predicitionset.rds")
+
