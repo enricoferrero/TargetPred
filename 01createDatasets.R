@@ -112,15 +112,19 @@ positive$target <- 1
 
 # unknown cases: it's not known whether these are targets or not
 unknown <- completeset[!completeset$ensembl_gene_id %in% positive$ensembl_gene_id, ]
-unknown <- unknown[sample(nrow(unknown), 2*nrow(positive)), ]
+unknown <- unknown[sample(nrow(unknown), nrow(positive)), ]
 unknown$target <- 0
 
 # dataset is made of positive and unknown cases
 # will be splitted into traing and test sets
 dataset <- rbind(positive, unknown)
 dataset$target <- as.factor(dataset$target)
+rownames(dataset) <- dataset$ensembl_gene_id
+dataset$ensembl_gene_id <- NULL
 saveRDS(dataset, file.path("../data/dataset.rds"))
 
 # prediction set will be kept for the actual prediction
 predictionset <- completeset[!completeset$ensembl_gene_id %in% dataset$ensembl_gene_id, ]
+rownames(predictionset) <- predictionset$ensembl_gene_id
+predictionset$ensembl_gene_id <- NULL
 saveRDS(predictionset, file.path("../data/predicitionset.rds"))
