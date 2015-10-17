@@ -12,3 +12,4 @@ mod <- readRDS(file.path("../data/mod.rds"))
 
 ### predict ###
 pred <- predict(mod, newdata=predicitonset)
+saveRDS(pred, file.path("../data/pred.rds"))
