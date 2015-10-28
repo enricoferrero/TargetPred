@@ -5,7 +5,6 @@ library(biomaRt)
 set.seed(16)
 ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
 chr <- c(1:22, "X", "Y", "MT")
-#chr <- 21
 type="protein_coding"
 
 ### functions ###

@@ -7,11 +7,10 @@ set.seed(16)
 parallelStart("multicore", 16)
 filter.method="kruskal.test"
 cv.n <- 3
-bag.n <- 50
+bag.n <- 20
 
 ### data ###
 dataset <- readRDS(file.path("../data/dataset.rds"))
-#dataset <- dataset[, c(sample(ncol(dataset), 1000), ncol(dataset))]
 
 ### setup ###
 ## task
@@ -79,6 +78,7 @@ dev.off()
 res <- resample(tun.bag.svm.lrn, filtered.task, rdesc)
 print(res$aggr)
 getConfMatrix(res$pred)
+saveRDS(res, file.path("../data/res.rds"))
 
 ## train and test model
 mod <- train(tun.bag.svm.lrn, filtered.task)
