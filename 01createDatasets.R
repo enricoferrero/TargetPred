@@ -133,5 +133,5 @@ for (agenttype in c("small_molecule", "antibody")) {
     predictionset <- completeset[!completeset$ensembl_gene_id %in% rownames(dataset), ]
     rownames(predictionset) <- predictionset$ensembl_gene_id
     predictionset$ensembl_gene_id <- NULL
-    saveRDS(predictionset, file.path(paste0("../data/predicitionset", agenttype, ".rds")))
+    saveRDS(predictionset, file.path(paste0("../data/predicitionset.", agenttype, ".rds")))
 }
