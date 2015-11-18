@@ -3,7 +3,8 @@ library(biomaRt)
 
 ### options ###
 set.seed(16)
-ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
+#ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
+ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="www.ensembl.org")
 chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
 
@@ -123,7 +124,7 @@ dataset$ensembl_gene_id <- NULL
 saveRDS(dataset, file.path("../data/dataset.rds"))
 
 # prediction set will be kept for the actual prediction
-predictionset <- completeset[!completeset$ensembl_gene_id %in% dataset$ensembl_gene_id, ]
+predictionset <- completeset[!completeset$ensembl_gene_id %in% rownames(dataset), ]
 rownames(predictionset) <- predictionset$ensembl_gene_id
 predictionset$ensembl_gene_id <- NULL
 saveRDS(predictionset, file.path("../data/predicitionset.rds"))

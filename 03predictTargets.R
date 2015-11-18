@@ -1,12 +1,14 @@
 ### libraries ###
 library(mlr)
+library(parallel)
 library(parallelMap)
 library(biomaRt)
 
 ### options ###
 set.seed(16)
-parallelStart("multicore", 16)
-ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
+parallelStart("multicore", detectCores())
+#ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
+ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="www.ensembl.org")
 chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
 

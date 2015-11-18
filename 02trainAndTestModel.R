@@ -1,10 +1,11 @@
 ### libraries ###
+library(parallel)
 library(mlr)
 library(parallelMap)
 
 ### options ###
 set.seed(16)
-parallelStart("multicore", 16)
+parallelStart("multicore", detectCores())
 filter.method="kruskal.test"
 cv.n <- 3
 bag.n <- 20
