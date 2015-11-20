@@ -16,7 +16,7 @@ type="protein_coding"
 # separate small molecules and antibodies
 for (agenttype in c("small_molecule", "antibody")) {
 
-    predictionset <- readRDS(file.path(paste0("../data/predicitionset", agenttype, ".rds")))
+    predictionset <- readRDS(file.path(paste0("../data/predicitionset.", agenttype, ".rds")))
     mod <- readRDS(file.path(paste0("../data/mod.", agenttype, ".rds")))
 
     ### predict ###
@@ -34,3 +34,5 @@ for (agenttype in c("small_molecule", "antibody")) {
     write.csv(predres, file.path(paste0("../data/PredicitonResults.", agenttype, ".csv")), quote=FALSE, row.names=FALSE)
 
 }
+
+parallelStop()
