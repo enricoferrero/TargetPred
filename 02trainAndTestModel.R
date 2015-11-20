@@ -7,7 +7,7 @@ library(parallelMap)
 set.seed(16)
 parallelStart("multicore", detectCores())
 filter.method="kruskal.test"
-filter.perc=0.05
+filter.perc=0.01
 cv.n <- 3
 bag.n <- 20
 
