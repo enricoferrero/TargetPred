@@ -7,21 +7,18 @@ library(parallelMap)
 set.seed(16)
 parallelStart("multicore", detectCores())
 filter.method="kruskal.test"
+filter.perc=0.05
 cv.n <- 3
 bag.n <- 20
 
 # separate small molecules and antibodies
 for (agenttype in c("small_molecule", "antibody")) {
 
-    ### data ###
+    ## data
     dataset <- readRDS(file.path(paste0("../data/dataset.", agenttype, ".rds")))
 
-    ### setup ###
     ## task
     classif.task <- makeClassifTask(id="TargetPred", data=dataset, target="target", positive="1")
-
-    ## feature selection
-    filtered.task <- filterFeatures(classif.task, method=filter.method, perc=0.01)
 
     ## resampling strategy
     rdesc <- makeResampleDesc("CV", iters=cv.n)
@@ -32,19 +29,26 @@ for (agenttype in c("small_molecule", "antibody")) {
                     makeDiscreteParam("gamma", values = 2^(-2:2))
     )
 
+    ## feature selection
+    filtered.task <- filterFeatures(classif.task, method=filter.method, perc=filter.perc)
+    fv <- generateFilterValuesData(filtered.task, method=filter.method)
+    png(file.path(paste0("../data/FilteredFeatures.", agenttype, ".png")), height=10*150, width=10*150, res=150)
+    plotFilterValues(fv)
+    dev.off()
+    saveRDS(fv, file.path(paste0("../data/fv.", agenttype, ".rds")))
 
     ### test different algorithms ###
     ## learners
     # k-nearest neighbour
-    knn.lrn <- makeLearner("classif.kknn")
+    knn.lrn <- makeLearner("classif.kknn", predict.type="prob")
     knn.lrn$id <- "K-Nearest Neighbour"
 
     # decision tree
-    dt.lrn <- makeLearner("classif.rpart")
+    dt.lrn <- makeLearner("classif.rpart", predict.type="prob")
     dt.lrn$id <- "Decision Tree"
 
     # random forest
-    rf.lrn <- makeLearner("classif.randomForest")
+    rf.lrn <- makeLearner("classif.randomForest", predict.type="prob")
     rf.lrn$id <- "Random Forest"
 
     # svm
@@ -72,7 +76,7 @@ for (agenttype in c("small_molecule", "antibody")) {
     # tuned svm
     tun.svm.lrn <- makeLearner("classif.svm", predict.type="prob")
     tun.svm.lrn <- tuneParams(tun.svm.lrn, filtered.task, rdesc, par.set=ps, control=makeTuneControlGrid())
-    tun.svm.lrn <- makeLearner("classif.svm", predict.type="prob", par.vals = list(cost=tun$x$cost, gamma=tun$x$gamma))
+    tun.svm.lrn <- makeLearner("classif.svm", predict.type="prob", par.vals = list(cost=tun.svm.lrn$x$cost, gamma=tun.svm.lrn$x$gamma))
     tun.svm.lrn$id <- "Tuned SVM"
 
     # bagged svm
@@ -86,7 +90,7 @@ for (agenttype in c("small_molecule", "antibody")) {
     tun.bag.svm.lrn <- makeBaggingWrapper(tun.bag.svm.lrn, bw.iters=bag.n)
     tun.bag.svm.lrn <- setPredictType(tun.bag.svm.lrn, predict.type="prob")
     tun.bag.svm.lrn <- tuneParams(tun.bag.svm.lrn, filtered.task, rdesc, par.set=ps, control=makeTuneControlGrid())
-    tun.bag.svm.lrn <- makeLearner("classif.svm", predict.type="response", par.vals = list(cost=tun$x$cost, gamma=tun$x$gamma))
+    tun.bag.svm.lrn <- makeLearner("classif.svm", predict.type="response", par.vals = list(cost=tun.bag.svm.lrn$x$cost, gamma=tun.bag.svm.lrn$x$gamma))
     tun.bag.svm.lrn <- makeBaggingWrapper(tun.bag.svm.lrn, bw.iters=bag.n)
     tun.bag.svm.lrn <- setPredictType(tun.bag.svm.lrn, predict.type="prob")
     tun.bag.svm.lrn$id <- "Tuned Bagged SVM"
@@ -115,3 +119,5 @@ for (agenttype in c("small_molecule", "antibody")) {
     saveRDS(mod, file.path(paste0("../data/mod.", agenttype, ".rds")))
 
 }
+
+parallelStop()
