@@ -1,5 +1,4 @@
 library(biomaRt)
-#library(reactome.db)
 #ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
 ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="www.ensembl.org")
 
@@ -7,7 +6,7 @@ ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="www.en
 for (agenttype in c("small_molecule", "antibody")) {
 
     fv <- readRDS(file.path(paste0("../data/fv.", agenttype, ".rds")))
-    fv <- fv$data[order(fv$data[[filter.method]], decreasing=TRUE),]
+    fv <- fv$data
     fv$name <- sub("feat.", "", fv$name)
     fv$name <- sub("GO_", "GO:", fv$name)
     fv$name <- sub("R_HSA_", "R-HSA-", fv$name)
@@ -22,20 +21,20 @@ for (agenttype in c("small_molecule", "antibody")) {
     names(go_id) <- c("name", "description")
     go_id <- na.omit(merge(fv, go_id, all=TRUE))
 
-    #reactome <- fv[grep("^R-HSA", fv$name), "name"]
-    #reactome <- getBM(attributes=c("reactome", "reactome_description"), filters="reactome", values=reactome, mart=ensembl)
-    #names(reactome) <- c("name", "description")
-    #reactome <- na.omit(merge(fv, reactome, all=TRUE))
+    reactann <- read.delim("http://www.reactome.org/download/current/ReactomePathways.txt", header=FALSE)
+    reactome <- fv[grep("^R-HSA", fv$name), "name"]
+    reactome <- unique(merge(reactome, reactann[1:2], by=1))
+    names(reactome) <- c("name", "description")
+    reactome <- na.omit(merge(fv, reactome, all=TRUE))
 
     others <- fv[grep("^(?!IPR)", fv$name, perl=TRUE), ]
     others <- others[grep("^(?!GO)", others$name, perl=TRUE), ]
     others <- others[grep("^(?!R-HSA)", others$name, perl=TRUE), ]
     others$description <- others$name
 
-    #feats <- rbind(interpro, go_id, reactome, others)
-    feats <- rbind(interpro, go_id, others)
+    feats <- rbind(interpro, go_id, reactome, others)
     feats <- feats[order(feats[3], decreasing=TRUE), ]
-    write.csv(feats, file.path(paste0("../data/SelectedFeatures.", agenttype, ".csv")), quote=FALSE, row.names=FALSE)
+    write.csv(feats, file.path(paste0("../data/SelectedFeatures.", agenttype, ".csv")), quote=TRUE, row.names=FALSE)
 
 }
 
