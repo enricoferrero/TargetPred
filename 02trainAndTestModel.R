@@ -2,6 +2,7 @@
 library(parallel)
 library(mlr)
 library(parallelMap)
+library(xlsx)
 
 ### options ###
 set.seed(16)
@@ -33,7 +34,9 @@ for (agenttype in c("small_molecule", "antibody")) {
     filtered.task <- filterFeatures(classif.task, method=filter.method, perc=filter.perc)
     fv <- generateFilterValuesData(filtered.task, method=filter.method)
     png(file.path(paste0("../data/FilteredFeatures.", agenttype, ".png")), height=10*150, width=10*150, res=150)
-    plotFilterValues(fv)
+    print(
+        plotFilterValues(fv)
+    )
     dev.off()
     saveRDS(fv, file.path(paste0("../data/fv.", agenttype, ".rds")))
 
@@ -51,71 +54,62 @@ for (agenttype in c("small_molecule", "antibody")) {
     rf.lrn <- makeLearner("classif.randomForest", predict.type="prob")
     rf.lrn$id <- "Random Forest"
 
+    # neural network
+    nn.lrn <- makeLearner("classif.nnet", predict.type="prob")
+    nn.lrn$id <- "Neural Network"
+
     # svm
     svm.lrn <- makeLearner("classif.svm", predict.type="prob")
     svm.lrn$id <- "SVM"
 
-    ## benchmark
-    all.lrns <- list(knn.lrn, dt.lrn, rf.lrn, svm.lrn)
-    all.bmrk <- benchmark(all.lrns, filtered.task, rdesc)
-    print(all.bmrk)
-    png(file.path(paste0("../data/AllBenchmarkBoxplots.", agenttype, ".png")), height=10*150, width=10*150, res=150)
-    plotBenchmarkResult(all.bmrk, measure=mmce) +
-        aes(colour=learner.id)
-    dev.off()
-    png(file.path(paste0("../data/AllBenchmarkROC.", agenttype, ".png")), height=10*150, width=10*150, res=150)
-    plotROCRCurves(generateROCRCurvesData(all.bmrk), diagonal=TRUE)
-    dev.off()
+    ## tuned svm
+    #tun.svm.lrn <- makeLearner("classif.svm", predict.type="prob")
+    #tun.svm.lrn <- tuneParams(tun.svm.lrn, filtered.task, rdesc, par.set=ps, control=makeTuneControlGrid())
+    #tun.svm.lrn <- makeLearner("classif.svm", predict.type="prob", par.vals = list(cost=tun.svm.lrn$x$cost, gamma=tun.svm.lrn$x$gamma))
+    #tun.svm.lrn$id <- "Tuned SVM"
 
-    ### tune best algorithm ###
-    ## learners
-    # svm
-    svm.lrn <- makeLearner("classif.svm", predict.type="prob")
-    svm.lrn$id <- "SVM"
+    ## bagged svm
+    #bag.svm.lrn <- makeLearner("classif.svm", predict.type="response")
+    #bag.svm.lrn <- makeBaggingWrapper(bag.svm.lrn, bw.iters=bag.n)
+    #bag.svm.lrn <- setPredictType(bag.svm.lrn, predict.type="prob")
+    #bag.svm.lrn$id <- "Bagged SVM"
 
-    # tuned svm
-    tun.svm.lrn <- makeLearner("classif.svm", predict.type="prob")
-    tun.svm.lrn <- tuneParams(tun.svm.lrn, filtered.task, rdesc, par.set=ps, control=makeTuneControlGrid())
-    tun.svm.lrn <- makeLearner("classif.svm", predict.type="prob", par.vals = list(cost=tun.svm.lrn$x$cost, gamma=tun.svm.lrn$x$gamma))
-    tun.svm.lrn$id <- "Tuned SVM"
-
-    # bagged svm
-    bag.svm.lrn <- makeLearner("classif.svm", predict.type="response")
-    bag.svm.lrn <- makeBaggingWrapper(bag.svm.lrn, bw.iters=bag.n)
-    bag.svm.lrn <- setPredictType(bag.svm.lrn, predict.type="prob")
-    bag.svm.lrn$id <- "Bagged SVM"
-
-    # tuned bagged svm
-    tun.bag.svm.lrn <- makeLearner("classif.svm", predict.type="response")
-    tun.bag.svm.lrn <- makeBaggingWrapper(tun.bag.svm.lrn, bw.iters=bag.n)
-    tun.bag.svm.lrn <- setPredictType(tun.bag.svm.lrn, predict.type="prob")
-    tun.bag.svm.lrn <- tuneParams(tun.bag.svm.lrn, filtered.task, rdesc, par.set=ps, control=makeTuneControlGrid())
-    tun.bag.svm.lrn <- makeLearner("classif.svm", predict.type="response", par.vals = list(cost=tun.bag.svm.lrn$x$cost, gamma=tun.bag.svm.lrn$x$gamma))
-    tun.bag.svm.lrn <- makeBaggingWrapper(tun.bag.svm.lrn, bw.iters=bag.n)
-    tun.bag.svm.lrn <- setPredictType(tun.bag.svm.lrn, predict.type="prob")
-    tun.bag.svm.lrn$id <- "Tuned Bagged SVM"
+    ## tuned bagged svm
+    #tun.bag.svm.lrn <- makeLearner("classif.svm", predict.type="response")
+    #tun.bag.svm.lrn <- makeBaggingWrapper(tun.bag.svm.lrn, bw.iters=bag.n)
+    #tun.bag.svm.lrn <- setPredictType(tun.bag.svm.lrn, predict.type="prob")
+    #tun.bag.svm.lrn <- tuneParams(tun.bag.svm.lrn, filtered.task, rdesc, par.set=ps, control=makeTuneControlGrid())
+    #tun.bag.svm.lrn <- makeLearner("classif.svm", predict.type="response", par.vals = list(cost=tun.bag.svm.lrn$x$cost, gamma=tun.bag.svm.lrn$x$gamma))
+    #tun.bag.svm.lrn <- makeBaggingWrapper(tun.bag.svm.lrn, bw.iters=bag.n)
+    #tun.bag.svm.lrn <- setPredictType(tun.bag.svm.lrn, predict.type="prob")
+    #tun.bag.svm.lrn$id <- "Tuned Bagged SVM"
 
     ## benchmark
-    best.lrns <- list(svm.lrn, tun.svm.lrn, bag.svm.lrn, tun.bag.svm.lrn)
-    best.bmrk <- benchmark(best.lrns, filtered.task, rdesc)
-    print(best.bmrk)
-    png(file.path(paste0("../data/BestBenchmarkBoxplots.", agenttype, ".png")), height=10*150, width=10*150, res=150)
-    plotBenchmarkResult(best.bmrk, measure=mmce) +
-        aes(colour=learner.id)
+    lrns <- list(knn.lrn, dt.lrn, rf.lrn, nn.lrn, svm.lrn)
+    bmrk <- benchmark(lrns, filtered.task, rdesc)
+    write.xlsx(print(bmrk), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
+    png(file.path(paste0("../data/BenchmarkBoxplots.", agenttype, ".png")), height=10*150, width=10*150, res=150)
+    print(
+        plotBenchmarkResult(bmrk, measure=mmce) +
+            aes(colour=learner.id)
+    )
     dev.off()
-    png(file.path(paste0("../data/BestBenchmarkROC.", agenttype, ".png")), height=10*150, width=10*150, res=150)
-    plotROCRCurves(generateROCRCurvesData(best.bmrk), diagonal=TRUE)
+    png(file.path(paste0("../data/BenchmarkROC.", agenttype, ".png")), height=10*150, width=10*150, res=150)
+    print(
+        plotROCRCurves(generateROCRCurvesData(bmrk), diagonal=TRUE)
+    )
     dev.off()
 
     ### use best algorithm ###
     ## resampling
-    res <- resample(tun.bag.svm.lrn, filtered.task, rdesc)
-    print(res$aggr)
+    res <- resample(rf.lrn, filtered.task, rdesc)
+    write.xlsx(res$aggr, file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
     getConfMatrix(res$pred)
+    write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
     saveRDS(res, file.path(paste0("../data/res.", agenttype, ".rds")))
 
     ## train and test model
-    mod <- train(tun.bag.svm.lrn, filtered.task)
+    mod <- train(rf.lrn, filtered.task)
     saveRDS(mod, file.path(paste0("../data/mod.", agenttype, ".rds")))
 
 }
