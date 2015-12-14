@@ -99,6 +99,11 @@ for (agenttype in c("small_molecule", "antibody")) {
         plotROCRCurves(generateROCRCurvesData(bmrk), diagonal=TRUE)
     )
     dev.off()
+    png(file.path(paste0("../data/BenchmarkPR.", agenttype, ".png")), height=10*150, width=10*150, res=150)
+    print(
+        plotROCRCurves(generateROCRCurvesData(bmrk, meas1="prec", meas2="rec"), diagonal=FALSE)
+    )
+    dev.off()
 
     ### use best algorithm ###
     ## resampling
