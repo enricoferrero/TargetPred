@@ -91,6 +91,7 @@ completeset <- cbind(genes,
                  reactome[2:ncol(reactome)]
                  )
 names(completeset) <- gsub("[-:]", "_", names(completeset))
+saveRDS(completeset, file.path("../data/completeset.rds"))
 
 
 # separate small molecules and antibodies
