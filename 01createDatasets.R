@@ -93,50 +93,34 @@ completeset <- cbind(genes,
 names(completeset) <- gsub("[-:]", "_", names(completeset))
 saveRDS(completeset, file.path("../data/completeset.rds"))
 
+# set agenttype to small_molecule
+agenntype="small_molecule"
 
-# separate small molecules and antibodies
-for (agenttype in c("small_molecule", "antibody")) {
+# read tractability file
+tractability <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/target_tractability/CombinedOutput/target_tractability_output_without_bucket5_incomplete_patents.txt", as.is=TRUE, na.strings=c("NA", ""))
+tractability <- subset(tractability, Tractable.ranking.bucket <= 10, Ensembl.Gene.ID, drop=TRUE)
+tractability <- unique(na.omit(tractability))
 
-    # read targetpedia data for target information
-    targetpedia <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/targetpedia/targetpedia_triples.txt")
-    targetpedia <- subset(targetpedia, targetpedia_agent_type == agenttype)
-    targetpedia <- getBM(
-                    attributes="ensembl_gene_id",
-                    filters=c("entrezgene", "chromosome_name", "biotype"),
-                    values=list(targetpedia$Target_EntrezGeneId, chr, type),
-                    mart=ensembl)
+# positive cases: these are tractable targets
+positive <- tractability
+positive <- completeset[completeset$ensembl_gene_id %in% positive, ]
+positive$target <- 1
 
-    # read pharmaprojects data for target information
-    pharmaprojects <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/pipeline/pipeline_triples.txt")
-    pharmaprojects <- subset(pharmaprojects, pipeline_agent_type == agenttype)
-    pharmaprojects <- getBM(
-                            attributes="ensembl_gene_id",
-                            filters=c("entrezgene", "chromosome_name", "biotype"),
-                            values=list(pharmaprojects$Target_EntrezGeneId, chr, type),
-                            mart=ensembl)
+# unknown cases: it's not known whether these are tractable targets or not
+unknown <- completeset[!completeset$ensembl_gene_id %in% positive, ]
+unknown <- unknown[sample(nrow(unknown), nrow(positive)), ]
+unknown$target <- 0
 
-    # positive cases: these are targets according to targetpedia and/or pharmaprojects
-    positive <- unique(rbind(targetpedia, pharmaprojects))
-    positive <- completeset[completeset$ensembl_gene_id %in% positive$ensembl_gene_id, ]
-    positive$target <- 1
+# dataset is made of positive and unknown cases
+# will be splitted into traing and test sets
+dataset <- rbind(positive, unknown)
+dataset$target <- as.factor(dataset$target)
+rownames(dataset) <- dataset$ensembl_gene_id
+dataset$ensembl_gene_id <- NULL
+saveRDS(dataset, file.path(paste0("../data/dataset.", agenttype, ".rds")))
 
-    # unknown cases: it's not known whether these are targets or not
-    unknown <- completeset[!completeset$ensembl_gene_id %in% positive$ensembl_gene_id, ]
-    unknown <- unknown[sample(nrow(unknown), nrow(positive)), ]
-    unknown$target <- 0
-
-    # dataset is made of positive and unknown cases
-    # will be splitted into traing and test sets
-    dataset <- rbind(positive, unknown)
-    dataset$target <- as.factor(dataset$target)
-    rownames(dataset) <- dataset$ensembl_gene_id
-    dataset$ensembl_gene_id <- NULL
-    saveRDS(dataset, file.path(paste0("../data/dataset.", agenttype, ".rds")))
-
-    # prediction set will be kept for the actual prediction
-    predictionset <- completeset[!completeset$ensembl_gene_id %in% rownames(dataset), ]
-    rownames(predictionset) <- predictionset$ensembl_gene_id
-    predictionset$ensembl_gene_id <- NULL
-    saveRDS(predictionset, file.path(paste0("../data/predicitionset.", agenttype, ".rds")))
-
-}
+# prediction set will be kept for the actual prediction
+predictionset <- completeset[!completeset$ensembl_gene_id %in% rownames(dataset), ]
+rownames(predictionset) <- predictionset$ensembl_gene_id
+predictionset$ensembl_gene_id <- NULL
+saveRDS(predictionset, file.path(paste0("../data/predicitionset.", agenttype, ".rds")))
