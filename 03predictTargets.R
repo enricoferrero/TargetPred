@@ -14,7 +14,7 @@ type="protein_coding"
 
 ### data ###
 # set agenttype to small_molecule
-agenntype="small_molecule"
+agenttype="small_molecule"
 
 predictionset <- readRDS(file.path(paste0("../data/predicitionset.", agenttype, ".rds")))
 mod <- readRDS(file.path(paste0("../data/mod.", agenttype, ".rds")))

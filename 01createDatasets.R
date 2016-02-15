@@ -94,20 +94,19 @@ names(completeset) <- gsub("[-:]", "_", names(completeset))
 saveRDS(completeset, file.path("../data/completeset.rds"))
 
 # set agenttype to small_molecule
-agenntype="small_molecule"
+agenttype="small_molecule"
 
 # read tractability file
 tractability <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/target_tractability/CombinedOutput/target_tractability_output_without_bucket5_incomplete_patents.txt", as.is=TRUE, na.strings=c("NA", ""))
-tractability <- subset(tractability, Tractable.ranking.bucket <= 10, Ensembl.Gene.ID, drop=TRUE)
+tractability <- subset(tractability, Tractable.ranking.bucket <= 10, Ensembl.Gene.ID)
 tractability <- unique(na.omit(tractability))
 
 # positive cases: these are tractable targets
-positive <- tractability
-positive <- completeset[completeset$ensembl_gene_id %in% positive, ]
+positive <- completeset[completeset$ensembl_gene_id %in% tractability$Ensembl.Gene.ID, ]
 positive$target <- 1
 
 # unknown cases: it's not known whether these are tractable targets or not
-unknown <- completeset[!completeset$ensembl_gene_id %in% positive, ]
+unknown <- completeset[!completeset$ensembl_gene_id %in% tractability$Ensembl.Gene.ID, ]
 unknown <- unknown[sample(nrow(unknown), nrow(positive)), ]
 unknown$target <- 0
 

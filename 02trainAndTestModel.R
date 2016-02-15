@@ -13,7 +13,7 @@ cv.n <- 3
 bag.n <- 20
 
 # set agenttype to small_molecule
-agenntype="small_molecule"
+agenttype="small_molecule"
 
 ## data
 dataset <- readRDS(file.path(paste0("../data/dataset.", agenttype, ".rds")))

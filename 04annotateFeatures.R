@@ -3,7 +3,7 @@ library(biomaRt)
 ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="www.ensembl.org")
 
 # set agenttype to small_molecule
-agenntype="small_molecule"
+agenttype="small_molecule"
 
 fv <- readRDS(file.path(paste0("../data/fv.", agenttype, ".rds")))
 fv <- fv$data
