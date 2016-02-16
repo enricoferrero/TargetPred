@@ -7,10 +7,10 @@ library(xlsx)
 ### options ###
 set.seed(16)
 parallelStart("multicore", detectCores())
-filter.method="kruskal.test"
+filter.method="mrmr"
 filter.perc=0.01
-cv.n <- 3
-bag.n <- 20
+cv.n <- 10
+bag.n <- 50
 
 # separate small molecules and antibodies
 for (agenttype in c("small_molecule", "antibody")) {
@@ -20,6 +20,7 @@ for (agenttype in c("small_molecule", "antibody")) {
 
     ## task
     classif.task <- makeClassifTask(id="TargetPred", data=dataset, target="target", positive="1")
+    saveRDS(classif.task, file.path(paste0("../data/classif.task.", agenttype, ".rds")))
 
     ## resampling strategy
     rdesc <- makeResampleDesc("CV", iters=cv.n)
@@ -32,6 +33,7 @@ for (agenttype in c("small_molecule", "antibody")) {
 
     ## feature selection
     filtered.task <- filterFeatures(classif.task, method=filter.method, perc=filter.perc)
+    saveRDS(filtered.task, file.path(paste0("../data/filtered.task.", agenttype, ".rds")))
     fv <- generateFilterValuesData(filtered.task, method=filter.method)
     png(file.path(paste0("../data/FilteredFeatures.", agenttype, ".png")), height=10*150, width=10*150, res=150)
     print(
@@ -39,6 +41,11 @@ for (agenttype in c("small_molecule", "antibody")) {
     )
     dev.off()
     saveRDS(fv, file.path(paste0("../data/fv.", agenttype, ".rds")))
+
+    ## training and test set
+    n <- getTaskSize(filtered.task)
+    train.set <- sample(n, size = round(0.8*n))
+    test.set <- setdiff(seq(n), train.set)
 
     ### test different algorithms ###
     ## learners
@@ -115,17 +122,28 @@ for (agenttype in c("small_molecule", "antibody")) {
     )
     dev.off()
 
-    ### use best algorithm ###
-    ## resampling
+
+    ### use best algorithm
+
+    ## cross-validation
     res <- resample(rf.lrn, filtered.task, rdesc)
-    write.xlsx(res$aggr, file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
-    getConfMatrix(res$pred)
-    write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
     saveRDS(res, file.path(paste0("../data/res.", agenttype, ".rds")))
 
-    ## train and test model
-    mod <- train(rf.lrn, filtered.task)
+    # export
+    write.xlsx(res$aggr, file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
+    write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
+
+    ## train model
+    mod <- train(rf.lrn, filtered.task, subset=train.set)
     saveRDS(mod, file.path(paste0("../data/mod.", agenttype, ".rds")))
+
+    ## evaluate performance on test set
+    test.pred <- predict(mod, task=filtered.task, subset=test.set)
+    saveRDS(test.pred, file.path(paste0("../data/test.pred.", agenttype, ".rds")))
+
+    # export
+    write.xlsx(performance(test.pred), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
+    write.xlsx(as.data.frame(getConfMatrix(test.pred)), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
 
 }
 
