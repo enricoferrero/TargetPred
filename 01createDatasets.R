@@ -100,6 +100,12 @@ for (agenttype in c("small_molecule", "antibody")) {
     # read targetpedia data for target information
     targetpedia <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/targetpedia/targetpedia_triples.txt")
     targetpedia <- subset(targetpedia, targetpedia_agent_type == agenttype)
+    targetpedia <- subset(targetpedia,
+                              Status == "Active" |
+                              Status == "Completed" |
+                              Status == "Proposed" |
+                              Status == "Under Review-Progressing" |
+                              Status == "Under Review-On Hold")
     targetpedia <- getBM(
                     attributes="ensembl_gene_id",
                     filters=c("entrezgene", "chromosome_name", "biotype"),
@@ -109,6 +115,16 @@ for (agenttype in c("small_molecule", "antibody")) {
     # read pharmaprojects data for target information
     pharmaprojects <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/pipeline/pipeline_triples.txt")
     pharmaprojects <- subset(pharmaprojects, pipeline_agent_type == agenttype)
+    pharmaprojects <- subset(pharmaprojects,
+                                 GlobalStatus == "Clinical Trial" |
+                                 GlobalStatus == "Discontinued" |
+                                 GlobalStatus == "Launched" |
+                                 GlobalStatus == "Phase I Clinical Trial" |
+                                 GlobalStatus == "Phase II Clinical Trial" |
+                                 GlobalStatus == "Phase III Clinical Trial" |
+                                 GlobalStatus == "Pre-registration" |
+                                 GlobalStatus == "Preclinical" |
+                                 GlobalStatus == "Registered")
     pharmaprojects <- getBM(
                             attributes="ensembl_gene_id",
                             filters=c("entrezgene", "chromosome_name", "biotype"),
