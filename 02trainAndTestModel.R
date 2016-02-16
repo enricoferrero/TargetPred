@@ -88,20 +88,30 @@ for (agenttype in c("small_molecule", "antibody")) {
     lrns <- list(knn.lrn, dt.lrn, rf.lrn, nn.lrn, svm.lrn)
     bmrk <- benchmark(lrns, filtered.task, rdesc)
     write.xlsx(print(bmrk), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
+
+    # boxplots
     png(file.path(paste0("../data/BenchmarkBoxplots.", agenttype, ".png")), height=10*150, width=10*150, res=150)
     print(
-        plotBenchmarkResult(bmrk, measure=mmce) +
+        plotBMRBoxplots(bmrk, measure=mmce) +
             aes(colour=learner.id)
     )
     dev.off()
+
+    # ROC curves
+    roc <- generateThreshVsPerfData(bmrk, measures=list(fpr, tpr))
     png(file.path(paste0("../data/BenchmarkROC.", agenttype, ".png")), height=10*150, width=10*150, res=150)
     print(
-        plotROCRCurves(generateROCRCurvesData(bmrk), diagonal=TRUE)
+        #plotROCCurves(generateThreshVsPerfData(bmrk, measures=list(fpr, tpr)), diagonal=TRUE) # faceted plot
+        qplot(x=fpr, y=tpr, color=learner, data=roc$data, geom="path", xlab="False positive rate", ylab="True positive rate")
     )
     dev.off()
+
+    # PR curves
+    pr <- generateThreshVsPerfData(bmrk, measures=list(tpr, ppv))
     png(file.path(paste0("../data/BenchmarkPR.", agenttype, ".png")), height=10*150, width=10*150, res=150)
     print(
-        plotROCRCurves(generateROCRCurvesData(bmrk, meas1="prec", meas2="rec"), diagonal=FALSE)
+        #plotROCCurves(generateThreshVsPerfData(bmrk, measures=list(ppv, tpr)), diagonal=FALSE) # faceted plot
+        qplot(x=ppv, y=tpr, color=learner, data=pr$data, geom="path", xlab="Precision", ylab="Recall")
     )
     dev.off()
 
