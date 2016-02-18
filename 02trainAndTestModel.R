@@ -8,7 +8,6 @@ library(xlsx)
 set.seed(16)
 parallelStart("multicore", detectCores())
 filter.method="mrmr"
-filter.perc=0.01
 cv.n <- 10
 bag.n <- 50
 
@@ -32,7 +31,10 @@ for (agenttype in c("small_molecule", "antibody")) {
     )
 
     ## feature selection
-    filtered.task <- filterFeatures(classif.task, method=filter.method, perc=filter.perc)
+    # first, remove constant features and those that differ less than 1% from the mode (most frequent number) of the data
+    filtered.task <- removeConstantFeatures(classif.task, perc=0.01)
+    # then, perform feature selection using method of choice and keep top 250 
+    filtered.task <- filterFeatures(filtered.task, method=filter.method, abs=250)
     saveRDS(filtered.task, file.path(paste0("../data/filtered.task.", agenttype, ".rds")))
     fv <- generateFilterValuesData(filtered.task, method=filter.method)
     png(file.path(paste0("../data/FilteredFeatures.", agenttype, ".png")), height=10*150, width=10*150, res=150)
@@ -130,8 +132,8 @@ for (agenttype in c("small_molecule", "antibody")) {
     saveRDS(res, file.path(paste0("../data/res.", agenttype, ".rds")))
 
     # export
-    write.xlsx(res$aggr, file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
-    write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
+    write.xlsx(res$aggr, file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="CV Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
+    write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="CV Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
 
     ## train model
     mod <- train(rf.lrn, filtered.task, subset=train.set)
@@ -142,8 +144,8 @@ for (agenttype in c("small_molecule", "antibody")) {
     saveRDS(test.pred, file.path(paste0("../data/test.pred.", agenttype, ".rds")))
 
     # export
-    write.xlsx(performance(test.pred), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
-    write.xlsx(as.data.frame(getConfMatrix(test.pred)), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
+    write.xlsx(performance(test.pred), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Test Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
+    write.xlsx(as.data.frame(getConfMatrix(test.pred)), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Test Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
 
 }
 

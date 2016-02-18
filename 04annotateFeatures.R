@@ -1,6 +1,6 @@
 library(biomaRt)
-#ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
-ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="www.ensembl.org")
+ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
+#ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="www.ensembl.org")
 
 # separate small molecules and antibodies
 for (agenttype in c("small_molecule", "antibody")) {

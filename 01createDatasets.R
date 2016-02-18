@@ -3,8 +3,8 @@ library(biomaRt)
 
 ### options ###
 set.seed(16)
-#ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
-ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="www.ensembl.org")
+ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
+#ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="www.ensembl.org")
 chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
 
