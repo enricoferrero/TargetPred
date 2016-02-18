@@ -40,6 +40,24 @@ print(
 dev.off()
 saveRDS(fv, file.path(paste0("../data/fv.", agenttype, ".rds")))
 
+## substitute targettability with tractability
+# extract data from task
+filtered.dataset <- getTaskData(filtered.task)
+# read and process tractability
+tractability <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/target_tractability/CombinedOutput/target_tractability_output_without_bucket5_incomplete_patents.txt", as.is=TRUE, na.strings=c("NA", ""))
+tractability <- subset(tractability, Tractable.ranking.bucket <= 10, Ensembl.Gene.ID)
+tractability <- unique(na.omit(tractability))
+tractability$target <- 1
+# substitute
+filtered.dataset <- merge(filtered.dataset[1:ncol(filtered.dataset)-1], tractability, by.x="row.names", by.y="Ensembl.Gene.ID", all.x=TRUE, all.y=FALSE)
+filtered.dataset$target[is.na(filtered.dataset$target)] <- 0
+filtered.dataset$target <- as.factor(filtered.dataset$target)
+# reannotate
+rownames(filtered.dataset) <- filtered.dataset$Row.names
+filtered.dataset$Row.names <- NULL
+# recreate task
+filtered.task <- makeClassifTask(id="TargetPred", data=filtered.dataset, target="target", positive="1")
+
 ### test different algorithms ###
 ## learners
 # k-nearest neighbour
