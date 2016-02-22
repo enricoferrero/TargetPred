@@ -52,7 +52,7 @@ genes <- getBM(
                mart=ensembl)
 genes <- genes[order(genes$ensembl_gene_id), , drop=FALSE]
 
-# create numeric and factor features
+# create numeric and factor features from Ensembl
 transcript_length <- createNumericFeature(genes, "transcript_length")
 transcript_count <- createNumericFeature(genes, "transcript_count")
 percentage_gc_content <- createNumericFeature(genes, "percentage_gc_content")
@@ -72,6 +72,15 @@ interpro <- createFactorFeature(genes, "interpro")
 go_id <- createFactorFeature(genes, "go_id")
 reactome <- createFactorFeature(genes, "reactome")
 
+# create numeric features from CTTV
+cttv <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/matrix.csv.gz")
+cttv <- subset(cttv, Is.direct == "True", c(EnsemblId, OntologyId, genetic_association, somatic_mutation, rna_expression, affected_pathway, animal_model, literature))
+cttv <- reshape(cttv, timevar="OntologyId", idvar="EnsemblId", direction="wide")
+cttv[is.na(cttv)] <- 0
+#cttv <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/matrix_datasources.csv.gz")
+#cttv <- subset(cttv, Is.direct == "True", c(EnsemblId, OntologyId, expression_atlas, arrayserver, uniprot, gwas_catalog, eva, uniprot_literature, reactome, metabase, phenodigm, cancer_gene_census, eva_somatic, chembl, pharmaprojects, targetpedia, europepmc))
+#cttv <- aggregate(cttv[3:ncol(cttv)], by=list(EnsemblId=cttv$EnsemblId), FUN=mean)
+
 # generate complete set with all features
 completeset <- cbind(genes,
                  transcript_length[2:ncol(transcript_length)],
@@ -90,9 +99,9 @@ completeset <- cbind(genes,
                  go_id[2:ncol(go_id)],
                  reactome[2:ncol(reactome)]
                  )
+completeset <- merge(completeset, cttv, by.x="ensembl_gene_id", by.y="EnsemblId", all.x=TRUE, all.y=FALSE)
 names(completeset) <- gsub("[-:]", "_", names(completeset))
 saveRDS(completeset, file.path("../data/completeset.rds"))
-
 
 # separate small molecules and antibodies
 for (agenttype in c("small_molecule", "antibody")) {
