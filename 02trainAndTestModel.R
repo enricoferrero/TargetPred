@@ -9,9 +9,9 @@ set.seed(16)
 parallelStart("multicore", detectCores())
 filter.method="mrmr"
 cv.n <- 10
-bag.n <- 50
+bag.n <- 10
 
-# separate small molecules and antibodies
+### model selection
 for (agenttype in c("small_molecule", "antibody")) {
 
     ## data
@@ -24,11 +24,9 @@ for (agenttype in c("small_molecule", "antibody")) {
     ## resampling strategy
     rdesc <- makeResampleDesc("CV", iters=cv.n)
 
-    ## parameter set for tuning SVM
-    ps <- makeParamSet(
-                    makeDiscreteParam("cost", values = 2^(-2:2)),
-                    makeDiscreteParam("gamma", values = 2^(-2:2))
-    )
+    ## tuning control
+    ctrl <- makeTuneControlGrid()
+
 
     ## feature selection
     # first, remove constant features and those that differ less than 1% from the mode (most frequent number) of the data
@@ -36,6 +34,7 @@ for (agenttype in c("small_molecule", "antibody")) {
     # then, perform feature selection using method of choice and keep top 250 
     filtered.task <- filterFeatures(filtered.task, method=filter.method, abs=250)
     saveRDS(filtered.task, file.path(paste0("../data/filtered.task.", agenttype, ".rds")))
+    # filtered features
     fv <- generateFilterValuesData(filtered.task, method=filter.method)
     png(file.path(paste0("../data/FilteredFeatures.", agenttype, ".png")), height=10*150, width=10*150, res=150)
     print(
@@ -43,58 +42,49 @@ for (agenttype in c("small_molecule", "antibody")) {
     )
     dev.off()
     saveRDS(fv, file.path(paste0("../data/fv.", agenttype, ".rds")))
+    # number of observations
+    no <- getTaskSize(filtered.task)
+    # number of features
+    nf <- getTaskNFeats(filtered.task)
 
     ## training and test set
-    n <- getTaskSize(filtered.task)
-    train.set <- sample(n, size = round(0.8*n))
-    test.set <- setdiff(seq(n), train.set)
-
-    ### test different algorithms ###
-    ## learners
-    # k-nearest neighbour
-    knn.lrn <- makeLearner("classif.kknn", predict.type="prob")
-    knn.lrn$id <- "K-Nearest Neighbour"
-
-    # decision tree
-    dt.lrn <- makeLearner("classif.rpart", predict.type="prob")
-    dt.lrn$id <- "Decision Tree"
+    train.set <- sample(no, size = round(0.8*no))
+    test.set <- setdiff(seq(no), train.set)
 
     # random forest
-    rf.lrn <- makeLearner("classif.randomForest", predict.type="prob")
-    rf.lrn$id <- "Random Forest"
+    rf.lrn <- makeLearner("classif.randomForest", id="Random Forest")
+    rf.ps <- makeParamSet(
+                          makeDiscreteParam("ntree", values = c(250, 500, 1000, 2500, 5000)),
+                          makeDiscreteParam("mtry", values = c(sqrt(nf), sqrt(nf)*2, sqrt(nf)*5, sqrt(nf)*10))
+    )
+    rf.tun <- tuneParams(rf.lrn, filtered.task, rdesc, par.set=rf.ps, control=control)
+    rf.lrn <- makeLearner("classif.rf", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
+    rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
 
     # neural network
-    nn.lrn <- makeLearner("classif.nnet", predict.type="prob")
-    nn.lrn$id <- "Neural Network"
+    nn.lrn <- makeLearner("classif.nnet", id="Neural Network")
+    nn.ps <- makeParamSet(
+                           makeDiscreteParam("size", values = c(2, 3, 5, 7, 10)),
+                           makeDiscreteParam("decay", values = c(0.5, 0.25, 0.1, 0))
+    )
+    nn.tun <- tuneParams(nn.lrn, filtered.task, rdesc, par.set=nn.ps, control=control)
+    nn.lrn <- makeLearner("classif.nn", par.vals = list(cost=nn.tun$x$size, gamma=nn.tun$x$decay))
+    nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
+    nn.lrn <- setPredictType(nn.lrn, predict.type="prob")
 
-    # svm
-    svm.lrn <- makeLearner("classif.svm", predict.type="prob")
-    svm.lrn$id <- "SVM"
-
-    ## tuned svm
-    #tun.svm.lrn <- makeLearner("classif.svm", predict.type="prob")
-    #tun.svm.lrn <- tuneParams(tun.svm.lrn, filtered.task, rdesc, par.set=ps, control=makeTuneControlGrid())
-    #tun.svm.lrn <- makeLearner("classif.svm", predict.type="prob", par.vals = list(cost=tun.svm.lrn$x$cost, gamma=tun.svm.lrn$x$gamma))
-    #tun.svm.lrn$id <- "Tuned SVM"
-
-    ## bagged svm
-    #bag.svm.lrn <- makeLearner("classif.svm", predict.type="response")
-    #bag.svm.lrn <- makeBaggingWrapper(bag.svm.lrn, bw.iters=bag.n)
-    #bag.svm.lrn <- setPredictType(bag.svm.lrn, predict.type="prob")
-    #bag.svm.lrn$id <- "Bagged SVM"
-
-    ## tuned bagged svm
-    #tun.bag.svm.lrn <- makeLearner("classif.svm", predict.type="response")
-    #tun.bag.svm.lrn <- makeBaggingWrapper(tun.bag.svm.lrn, bw.iters=bag.n)
-    #tun.bag.svm.lrn <- setPredictType(tun.bag.svm.lrn, predict.type="prob")
-    #tun.bag.svm.lrn <- tuneParams(tun.bag.svm.lrn, filtered.task, rdesc, par.set=ps, control=makeTuneControlGrid())
-    #tun.bag.svm.lrn <- makeLearner("classif.svm", predict.type="response", par.vals = list(cost=tun.bag.svm.lrn$x$cost, gamma=tun.bag.svm.lrn$x$gamma))
-    #tun.bag.svm.lrn <- makeBaggingWrapper(tun.bag.svm.lrn, bw.iters=bag.n)
-    #tun.bag.svm.lrn <- setPredictType(tun.bag.svm.lrn, predict.type="prob")
-    #tun.bag.svm.lrn$id <- "Tuned Bagged SVM"
+    # support vector machine
+    svm.lrn <- makeLearner("classif.svm", id="Support Vector Machine")
+    svm.ps <- makeParamSet(
+                           makeDiscreteParam("gamma", values = 2^(-2:2)),
+                           makeDiscreteParam("cost", values = 2^(-2:2))
+    )
+    svm.tun <- tuneParams(svm.lrn, filtered.task, rdesc, par.set=svm.ps, control=control)
+    svm.lrn <- makeLearner("classif.svm", par.vals = list(cost=svm.tun$x$cost, gamma=svm.tun$x$gamma))
+    svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
+    svm.lrn <- setPredictType(svm.lrn, predict.type="prob")
 
     ## benchmark
-    lrns <- list(knn.lrn, dt.lrn, rf.lrn, nn.lrn, svm.lrn)
+    lrns <- list(rf.lrn, nn.lrn, svm.lrn)
     bmrk <- benchmark(lrns, filtered.task, rdesc)
     write.xlsx(print(bmrk), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
 
@@ -124,8 +114,10 @@ for (agenttype in c("small_molecule", "antibody")) {
     )
     dev.off()
 
+}
 
-    ### use best algorithm
+#### model testing
+for (agenttype in c("small_molecule", "antibody")) {
 
     ## cross-validation
     res <- resample(rf.lrn, filtered.task, rdesc)
