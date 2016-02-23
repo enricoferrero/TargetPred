@@ -4,7 +4,6 @@ library(biomaRt)
 ### options ###
 set.seed(16)
 ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
-#ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="www.ensembl.org")
 chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
 
@@ -72,14 +71,13 @@ interpro <- createFactorFeature(genes, "interpro")
 go_id <- createFactorFeature(genes, "go_id")
 reactome <- createFactorFeature(genes, "reactome")
 
-# create numeric features from CTTV
+## create factor features from CTTV
 cttv <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/matrix.csv.gz")
 cttv <- subset(cttv, Is.direct == "True", c(EnsemblId, OntologyId, genetic_association, somatic_mutation, rna_expression, affected_pathway, animal_model, literature))
+cttv[cttv > 0] <- 1
 cttv <- reshape(cttv, timevar="OntologyId", idvar="EnsemblId", direction="wide")
 cttv[is.na(cttv)] <- 0
-#cttv <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/matrix_datasources.csv.gz")
-#cttv <- subset(cttv, Is.direct == "True", c(EnsemblId, OntologyId, expression_atlas, arrayserver, uniprot, gwas_catalog, eva, uniprot_literature, reactome, metabase, phenodigm, cancer_gene_census, eva_somatic, chembl, pharmaprojects, targetpedia, europepmc))
-#cttv <- aggregate(cttv[3:ncol(cttv)], by=list(EnsemblId=cttv$EnsemblId), FUN=mean)
+cttv <- as.data.frame(lapply(cttv, as.factor))
 
 # generate complete set with all features
 completeset <- cbind(genes,
