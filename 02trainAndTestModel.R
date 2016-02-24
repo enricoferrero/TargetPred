@@ -1,12 +1,11 @@
 ### libraries ###
-library(parallel)
 library(mlr)
+library(parallel)
 library(parallelMap)
-library(xlsx)
+parallelStart("multicore", detectCores())
 
 ### options ###
 set.seed(16)
-parallelStart("multicore", detectCores())
 cv.n <- 10
 bag.n <- 10
 
@@ -26,15 +25,14 @@ for (agenttype in c("small_molecule", "antibody")) {
     ## tuning control
     ctrl <- makeTuneControlGrid()
 
-
     ## feature selection
-    # first, remove constant features and those that differ less than 1% from the mode (most frequent number) of the data
-    filtered.task <- removeConstantFeatures(classif.task, perc=0.01)
+    # first, remove constant features and those that differ less than 5% from the mode (most frequent number) of the data
+    filtered.task <- removeConstantFeatures(classif.task, perc=0.05)
     # then, perform feature selection using method of choice and keep top 250 
     filtered.task <- filterFeatures(filtered.task, method="mrmr", abs=250)
     saveRDS(filtered.task, file.path(paste0("../data/filtered.task.", agenttype, ".rds")))
     # filtered features
-    fv <- generateFilterValuesData(filtered.task, method=filter.method)
+    fv <- generateFilterValuesData(filtered.task, method="mrmr")
     png(file.path(paste0("../data/FilteredFeatures.", agenttype, ".png")), height=10*150, width=10*150, res=150)
     print(
         plotFilterValues(fv)
@@ -54,9 +52,9 @@ for (agenttype in c("small_molecule", "antibody")) {
     rf.lrn <- makeLearner("classif.randomForest", id="Random Forest")
     rf.ps <- makeParamSet(
                           makeDiscreteParam("ntree", values = c(250, 500, 1000, 2500, 5000)),
-                          makeDiscreteParam("mtry", values = c(sqrt(nf), sqrt(nf)*2, sqrt(nf)*5, sqrt(nf)*10))
+                          makeDiscreteParam("mtry", values = c(round(sqrt(nf)), round(sqrt(nf)*2), round(sqrt(nf)*5), round(sqrt(nf)*10)))
     )
-    rf.tun <- tuneParams(rf.lrn, filtered.task, rdesc, par.set=rf.ps, control=control)
+    rf.tun <- tuneParams(rf.lrn, filtered.task, rdesc, par.set=rf.ps, control=ctrl)
     rf.lrn <- makeLearner("classif.rf", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
     rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
 
@@ -66,7 +64,7 @@ for (agenttype in c("small_molecule", "antibody")) {
                            makeDiscreteParam("size", values = c(2, 3, 5, 7, 10)),
                            makeDiscreteParam("decay", values = c(0.5, 0.25, 0.1, 0))
     )
-    nn.tun <- tuneParams(nn.lrn, filtered.task, rdesc, par.set=nn.ps, control=control)
+    nn.tun <- tuneParams(nn.lrn, filtered.task, rdesc, par.set=nn.ps, control=ctrl)
     nn.lrn <- makeLearner("classif.nn", par.vals = list(cost=nn.tun$x$size, gamma=nn.tun$x$decay))
     nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
     nn.lrn <- setPredictType(nn.lrn, predict.type="prob")
@@ -77,7 +75,7 @@ for (agenttype in c("small_molecule", "antibody")) {
                            makeDiscreteParam("gamma", values = 2^(-2:2)),
                            makeDiscreteParam("cost", values = 2^(-2:2))
     )
-    svm.tun <- tuneParams(svm.lrn, filtered.task, rdesc, par.set=svm.ps, control=control)
+    svm.tun <- tuneParams(svm.lrn, filtered.task, rdesc, par.set=svm.ps, control=ctrl)
     svm.lrn <- makeLearner("classif.svm", par.vals = list(cost=svm.tun$x$cost, gamma=svm.tun$x$gamma))
     svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
     svm.lrn <- setPredictType(svm.lrn, predict.type="prob")
@@ -85,7 +83,7 @@ for (agenttype in c("small_molecule", "antibody")) {
     ## benchmark
     lrns <- list(rf.lrn, nn.lrn, svm.lrn)
     bmrk <- benchmark(lrns, filtered.task, rdesc)
-    write.xlsx(print(bmrk), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
+    xlsx::write.xlsx(print(bmrk), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
 
     # boxplots
     png(file.path(paste0("../data/BenchmarkBoxplots.", agenttype, ".png")), height=10*150, width=10*150, res=150)
@@ -123,8 +121,8 @@ for (agenttype in c("small_molecule", "antibody")) {
     saveRDS(res, file.path(paste0("../data/res.", agenttype, ".rds")))
 
     # export
-    write.xlsx(res$aggr, file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="CV Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
-    write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="CV Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
+    xlsx::write.xlsx(res$aggr, file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="CV Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
+    xlsx::write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="CV Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
 
     ## train model
     mod <- train(rf.lrn, filtered.task, subset=train.set)
@@ -135,9 +133,10 @@ for (agenttype in c("small_molecule", "antibody")) {
     saveRDS(test.pred, file.path(paste0("../data/test.pred.", agenttype, ".rds")))
 
     # export
-    write.xlsx(performance(test.pred), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Test Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
-    write.xlsx(as.data.frame(getConfMatrix(test.pred)), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Test Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
+    xlsx::write.xlsx(performance(test.pred), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Test Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
+    xlsx::write.xlsx(as.data.frame(getConfMatrix(test.pred)), file.path(paste0("../data/Results.", agenttype, ".xlsx")), sheetName="Test Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
 
 }
 
+# stop parallelisation
 parallelStop()
