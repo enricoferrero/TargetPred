@@ -74,9 +74,9 @@ reactome <- createFactorFeature(genes, "reactome")
 ## create factor features from CTTV
 cttv <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/matrix.csv.gz")
 cttv <- subset(cttv, Is.direct == "True", c(EnsemblId, OntologyId, genetic_association, somatic_mutation, rna_expression, affected_pathway, animal_model, literature))
-cttv[cttv > 0] <- 1
 cttv <- reshape(cttv, timevar="OntologyId", idvar="EnsemblId", direction="wide")
 cttv[is.na(cttv)] <- 0
+cttv[cttv > 0] <- 1
 cttv <- as.data.frame(lapply(cttv, as.factor))
 
 # generate complete set with all features
@@ -98,6 +98,7 @@ completeset <- cbind(genes,
                  reactome[2:ncol(reactome)]
                  )
 completeset <- merge(completeset, cttv, by.x="ensembl_gene_id", by.y="EnsemblId", all.x=TRUE, all.y=FALSE)
+completeset[is.na(completeset)] <- 0
 names(completeset) <- gsub("[-:]", "_", names(completeset))
 saveRDS(completeset, file.path("../data/completeset.rds"))
 
