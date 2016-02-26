@@ -73,10 +73,14 @@ reactome <- createFactorFeature(genes, "reactome")
 
 ## create numeric features from CTTV
 cttv <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/matrix.csv.gz")
+# only use direct associations, remove known_drug and literature
 cttv <- subset(cttv, Is.direct == "True", c(EnsemblId, OntologyId, genetic_association, somatic_mutation, rna_expression, affected_pathway, animal_model))
+# remove lower confidence animal_model associations
+cttv$animal_model[cttv$animal_model < 0.75] <- 0
+# reshape to wide
 cttv <- reshape(cttv, timevar="OntologyId", idvar="EnsemblId", direction="wide")
+# replace NAs 
 cttv[is.na(cttv)] <- 0
-cttv <- as.data.frame(lapply(cttv, as.factor))
 
 # generate complete set with all features
 completeset <- cbind(genes,
