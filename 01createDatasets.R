@@ -71,12 +71,11 @@ interpro <- createFactorFeature(genes, "interpro")
 go_id <- createFactorFeature(genes, "go_id")
 reactome <- createFactorFeature(genes, "reactome")
 
-## create factor features from CTTV
+## create numeric features from CTTV
 cttv <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/matrix.csv.gz")
 cttv <- subset(cttv, Is.direct == "True", c(EnsemblId, OntologyId, genetic_association, somatic_mutation, rna_expression, affected_pathway, animal_model, literature))
 cttv <- reshape(cttv, timevar="OntologyId", idvar="EnsemblId", direction="wide")
 cttv[is.na(cttv)] <- 0
-cttv[cttv > 0] <- 1
 cttv <- as.data.frame(lapply(cttv, as.factor))
 
 # generate complete set with all features
