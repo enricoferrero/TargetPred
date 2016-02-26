@@ -6,8 +6,8 @@ parallelStartMulticore(detectCores(), mc.preschedule=FALSE)
 
 ### options ###
 set.seed(16)
-cv.n <- 3
-bag.n <- 3
+cv.n <- 10
+bag.n <- 50
 
 
 ### model selection
@@ -25,10 +25,10 @@ rdesc <- makeResampleDesc("CV", iters=cv.n)
 ctrl <- makeTuneControlGrid()
 
 ## feature selection
-# first, remove constant features and those that differ less than 5% from the mode (most frequent number) of the data
-filtered.task <- removeConstantFeatures(classif.task, perc=0.05)
-# then, perform feature selection using method of choice and keep top 250 
-filtered.task <- filterFeatures(filtered.task, method="mrmr", abs=250)
+# first, remove constant features and those that differ less than 1% from the mode (most frequent number) of the data
+filtered.task <- removeConstantFeatures(classif.task, perc=0.01)
+# then, perform feature selection using method of choice and keep top 100
+filtered.task <- filterFeatures(filtered.task, method="mrmr", abs=100)
 saveRDS(filtered.task, file.path("../data/filtered.task.rds"))
 # filtered features
 fv <- generateFilterValuesData(filtered.task, method="mrmr")
