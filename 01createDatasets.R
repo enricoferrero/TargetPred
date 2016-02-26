@@ -73,7 +73,7 @@ reactome <- createFactorFeature(genes, "reactome")
 
 ## create numeric features from CTTV
 cttv <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/matrix.csv.gz")
-cttv <- subset(cttv, Is.direct == "True", c(EnsemblId, OntologyId, genetic_association, somatic_mutation, rna_expression, affected_pathway, animal_model, literature))
+cttv <- subset(cttv, Is.direct == "True", c(EnsemblId, OntologyId, genetic_association, somatic_mutation, rna_expression, affected_pathway, animal_model))
 cttv <- reshape(cttv, timevar="OntologyId", idvar="EnsemblId", direction="wide")
 cttv[is.na(cttv)] <- 0
 cttv <- as.data.frame(lapply(cttv, as.factor))
