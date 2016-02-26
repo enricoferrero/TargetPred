@@ -12,12 +12,12 @@ chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
 
 ### data ###
-predictionset <- readRDS(file.path(paste0("../data/predicitionset.", ".rds")))
-mod <- readRDS(file.path(paste0("../data/mod.", ".rds")))
+predictionset <- readRDS(file.path("../data/predicitionset.rds"))
+mod <- readRDS(file.path("../data/mod.rds"))
 
 ### predict ###
 pred <- predict(mod, newdata=predictionset)
-saveRDS(pred, file.path(paste0("../data/pred.", ".rds")))
+saveRDS(pred, file.path("../data/pred.rds"))
 
 ### annotate ###
 ann <- getBM(attributes=c("ensembl_gene_id", "entrezgene", "external_gene_name"),
@@ -27,6 +27,6 @@ ann <- getBM(attributes=c("ensembl_gene_id", "entrezgene", "external_gene_name")
 predres <- merge(pred$data, ann, by.x="row.names", by.y="ensembl_gene_id", all=TRUE)
 names(predres) <- c("Ensembl", "UnknownProb", "TargetProb", "Prediction", "Entrez", "Symbol")
 predres <- predres[c("Ensembl", "Entrez", "Symbol", "Prediction", "TargetProb", "UnknownProb")]
-write.csv(predres, file.path(paste0("../data/PredicitonResults.", ".csv")), quote=FALSE, row.names=FALSE)
+write.csv(predres, file.path("../data/PredicitonResults.csv"), quote=FALSE, row.names=FALSE)
 
 parallelStop()

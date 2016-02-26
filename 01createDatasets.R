@@ -153,10 +153,10 @@ dataset <- rbind(positive, unknown)
 dataset$target <- as.factor(dataset$target)
 rownames(dataset) <- dataset$ensembl_gene_id
 dataset$ensembl_gene_id <- NULL
-saveRDS(dataset, file.path(paste0("../data/dataset.", ".rds")))
+saveRDS(dataset, file.path("../data/dataset.rds"))
 
 # prediction set will be kept for the actual prediction
 predictionset <- completeset[!completeset$ensembl_gene_id %in% rownames(dataset), ]
 rownames(predictionset) <- predictionset$ensembl_gene_id
 predictionset$ensembl_gene_id <- NULL
-saveRDS(predictionset, file.path(paste0("../data/predicitionset.", ".rds")))
+saveRDS(predictionset, file.path("../data/predicitionset.rds"))
