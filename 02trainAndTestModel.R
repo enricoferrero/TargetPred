@@ -2,12 +2,12 @@
 library(mlr)
 library(parallel)
 library(parallelMap)
-parallelStart("multicore", detectCores())
+parallelStartMulticore(detectCores(), mc.preschdule=FALSE)
 
 ### options ###
 set.seed(16)
 cv.n <- 10
-bag.n <- 10
+bag.n <- 50
 
 ### model selection
 for (agenttype in c("small_molecule", "antibody")) {
@@ -49,28 +49,31 @@ for (agenttype in c("small_molecule", "antibody")) {
     test.set <- setdiff(seq(no), train.set)
 
     # random forest
-    rf.lrn <- makeLearner("classif.randomForest", id="Random Forest")
+    rf.lrn <- makeLearner("classif.randomForest")
     rf.ps <- makeParamSet(
                           makeDiscreteParam("ntree", values = c(250, 500, 1000, 2500, 5000)),
                           makeDiscreteParam("mtry", values = c(round(sqrt(nf)), round(sqrt(nf)*2), round(sqrt(nf)*5), round(sqrt(nf)*10)))
     )
     rf.tun <- tuneParams(rf.lrn, filtered.task, rdesc, par.set=rf.ps, control=ctrl)
-    rf.lrn <- makeLearner("classif.rf", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
+    rf.lrn <- makeLearner("classif.randomForest", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
+    #rf.lrn <- makeBaggingWrapper(rf.lrn, bw.iters=bag.n)
     rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
+    rf.lrn$id <- "Random Forest"
 
     # neural network
-    nn.lrn <- makeLearner("classif.nnet", id="Neural Network")
+    nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000))
     nn.ps <- makeParamSet(
                            makeDiscreteParam("size", values = c(2, 3, 5, 7, 10)),
                            makeDiscreteParam("decay", values = c(0.5, 0.25, 0.1, 0))
     )
     nn.tun <- tuneParams(nn.lrn, filtered.task, rdesc, par.set=nn.ps, control=ctrl)
-    nn.lrn <- makeLearner("classif.nn", par.vals = list(cost=nn.tun$x$size, gamma=nn.tun$x$decay))
+    nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, size=nn.tun$x$size, decay=nn.tun$x$decay))
     nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
     nn.lrn <- setPredictType(nn.lrn, predict.type="prob")
+    nn.lrn$id <- "Neural Network"
 
     # support vector machine
-    svm.lrn <- makeLearner("classif.svm", id="Support Vector Machine")
+    svm.lrn <- makeLearner("classif.svm")
     svm.ps <- makeParamSet(
                            makeDiscreteParam("gamma", values = 2^(-2:2)),
                            makeDiscreteParam("cost", values = 2^(-2:2))
@@ -79,6 +82,7 @@ for (agenttype in c("small_molecule", "antibody")) {
     svm.lrn <- makeLearner("classif.svm", par.vals = list(cost=svm.tun$x$cost, gamma=svm.tun$x$gamma))
     svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
     svm.lrn <- setPredictType(svm.lrn, predict.type="prob")
+    svm.lrn$id <- "Support vector Machine"
 
     ## benchmark
     lrns <- list(rf.lrn, nn.lrn, svm.lrn)
@@ -138,5 +142,4 @@ for (agenttype in c("small_molecule", "antibody")) {
 
 }
 
-# stop parallelisation
 parallelStop()
