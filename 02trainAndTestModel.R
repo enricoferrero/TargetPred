@@ -2,7 +2,6 @@
 library(mlr)
 library(parallel)
 library(parallelMap)
-parallelStartMulticore(detectCores(), mc.preschedule=FALSE)
 
 ### options ###
 set.seed(16)
@@ -47,6 +46,9 @@ nf <- getTaskNFeats(filtered.task)
 train.set <- sample(no, size = round(0.8*no))
 test.set <- setdiff(seq(no), train.set)
 
+## tuning
+parallelStartMulticore(detectCores())
+
 # random forest
 rf.lrn <- makeLearner("classif.randomForest")
 rf.ps <- makeParamSet(
@@ -54,19 +56,20 @@ rf.ps <- makeParamSet(
                         makeDiscreteParam("mtry", values = c(round(sqrt(nf)), round(sqrt(nf)*2), round(sqrt(nf)*5), round(sqrt(nf)*10)))
 )
 rf.tun <- tuneParams(rf.lrn, filtered.task, rdesc, par.set=rf.ps, control=ctrl)
+saveRDS(rf.tun, file.path("../data/rf.tun.rds"))
 rf.lrn <- makeLearner("classif.randomForest", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
-#rf.lrn <- makeBaggingWrapper(rf.lrn, bw.iters=bag.n)
 rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
 rf.lrn$id <- "Random Forest"
 
 # neural network
-nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000))
+nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, trace=FALSE))
 nn.ps <- makeParamSet(
                         makeDiscreteParam("size", values = c(2, 3, 5, 7, 10)),
                         makeDiscreteParam("decay", values = c(0.5, 0.25, 0.1, 0))
 )
 nn.tun <- tuneParams(nn.lrn, filtered.task, rdesc, par.set=nn.ps, control=ctrl)
-nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, size=nn.tun$x$size, decay=nn.tun$x$decay))
+saveRDS(nn.tun, file.path("../data/nn.tun.rds"))
+nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, trace=FALSE, size=nn.tun$x$size, decay=nn.tun$x$decay))
 nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
 nn.lrn <- setPredictType(nn.lrn, predict.type="prob")
 nn.lrn$id <- "Neural Network"
@@ -78,15 +81,20 @@ svm.ps <- makeParamSet(
                         makeDiscreteParam("cost", values = 2^(-2:2))
 )
 svm.tun <- tuneParams(svm.lrn, filtered.task, rdesc, par.set=svm.ps, control=ctrl)
+saveRDS(svm.tun, file.path("../data/svm.tun.rds"))
 svm.lrn <- makeLearner("classif.svm", par.vals = list(cost=svm.tun$x$cost, gamma=svm.tun$x$gamma))
 svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
 svm.lrn <- setPredictType(svm.lrn, predict.type="prob")
-svm.lrn$id <- "Support vector Machine"
+svm.lrn$id <- "Support Vector Machine"
+
+parallelStop()
 
 ## benchmark
+parallelStartMulticore(detectCores(), level="mlr.resample")
 lrns <- list(rf.lrn, nn.lrn, svm.lrn)
 bmrk <- benchmark(lrns, filtered.task, rdesc)
 xlsx::write.xlsx(print(bmrk), file.path("../data/Results.xlsx"), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
+parallelStop()
 
 # boxplots
 png(file.path("../data/BenchmarkBoxplots.png"), height=10*150, width=10*150, res=150)
@@ -117,8 +125,10 @@ dev.off()
 
 #### model testing
 ## cross-validation
+parallelStartMulticore(detectCores(), level="mlr.resample")
 res <- resample(rf.lrn, filtered.task, rdesc)
 saveRDS(res, file.path("../data/res.rds"))
+parallelStop()
 
 # export
 xlsx::write.xlsx(res$aggr, file.path("../data/Results.xlsx"), sheetName="CV Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
