@@ -26,6 +26,7 @@ ctrl <- makeTuneControlGrid()
 ## feature selection
 # first, remove constant features and those that differ less than 1% from the mode (most frequent number) of the data
 filtered.task <- removeConstantFeatures(classif.task, perc=0.01)
+saveRDS(filtered.task, file.path("../data/filtered.task.rds"))
 # then, perform feature selection using method of choice and keep top 250
 filtered.task <- filterFeatures(filtered.task, method="mrmr", abs=250)
 saveRDS(filtered.task, file.path("../data/filtered.task.rds"))
