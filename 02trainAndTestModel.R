@@ -62,7 +62,7 @@ dt.lrn$id <- "Bagged Decision Tree"
 rf.lrn <- makeLearner("classif.randomForest")
 rf.ps <- makeParamSet(
                       makeDiscreteParam("ntree", values = c(250, 500, 1000, 2500, 5000)),
-                      makeDiscreteParam("mtry", values = c(round(sqrt(nf)), round(sqrt(nf)*2), round(sqrt(nf)*5), round(sqrt(nf)*10)))
+                      makeDiscreteParam("mtry", values = c(2, 3, 4, 5))
 )
 rf.tun <- tuneParams(rf.lrn, filtered.task, rdesc, par.set=rf.ps, control=ctrl)
 saveRDS(rf.tun, file.path("../data/rf.tun.rds"))
