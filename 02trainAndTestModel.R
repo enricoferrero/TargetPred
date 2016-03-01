@@ -6,7 +6,7 @@ library(parallelMap)
 ### options ###
 set.seed(16)
 cv.n <- 10
-bag.n <- 50
+bag.n <- 100
 
 
 ### model selection
@@ -47,30 +47,41 @@ test.set <- setdiff(seq(no), train.set)
 ## tuning
 parallelStartMulticore(detectCores())
 
+# decision tree
+dt.lrn <- makeLearner("classif.rpart")
+dt.ps <- makeParamSet(
+                      makeDiscreteParam("cp", values = c(0.001, 0.0025, 0.005, 0.01, 0.025, 0.05))
+                      )
+dt.tun <- tuneParams(dt.lrn, filtered.task, rdesc, par.set=dt.ps, control=ctrl)
+dt.lrn <- makeLearner("classif.rpart", par.vals = list(cp=dt.tun$x$cp))
+dt.lrn <- makeBaggingWrapper(dt.lrn, bw.iters=bag.n)
+dt.lrn <- setPredictType(dt.lrn, predict.type="prob")
+dt.lrn$id <- "Bagged Decision Tree"
+
 # random forest
 rf.lrn <- makeLearner("classif.randomForest")
 rf.ps <- makeParamSet(
-                        makeDiscreteParam("ntree", values = c(250, 500, 1000, 2500, 5000)),
-                        makeDiscreteParam("mtry", values = c(round(sqrt(nf)), round(sqrt(nf)*2), round(sqrt(nf)*5), round(sqrt(nf)*10)))
+                      makeDiscreteParam("ntree", values = c(250, 500, 1000, 2500, 5000)),
+                      makeDiscreteParam("mtry", values = c(round(sqrt(nf)), round(sqrt(nf)*2), round(sqrt(nf)*5), round(sqrt(nf)*10)))
 )
 rf.tun <- tuneParams(rf.lrn, filtered.task, rdesc, par.set=rf.ps, control=ctrl)
 saveRDS(rf.tun, file.path("../data/rf.tun.rds"))
 rf.lrn <- makeLearner("classif.randomForest", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
 rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
-rf.lrn$id <- "Random Forest"
+rf.lrn$id <- "Bagged Random Forest"
 
 # neural network
 nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, trace=FALSE))
 nn.ps <- makeParamSet(
-                        makeDiscreteParam("size", values = c(2, 3, 5, 7, 10)),
-                        makeDiscreteParam("decay", values = c(0.5, 0.25, 0.1, 0))
+                      makeDiscreteParam("size", values = c(2, 3, 5, 7, 10)),
+                      makeDiscreteParam("decay", values = c(0.5, 0.25, 0.1, 0))
 )
 nn.tun <- tuneParams(nn.lrn, filtered.task, rdesc, par.set=nn.ps, control=ctrl)
 saveRDS(nn.tun, file.path("../data/nn.tun.rds"))
 nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, trace=FALSE, size=nn.tun$x$size, decay=nn.tun$x$decay))
 nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
 nn.lrn <- setPredictType(nn.lrn, predict.type="prob")
-nn.lrn$id <- "Neural Network"
+nn.lrn$id <- "Bagged Neural Network"
 
 # support vector machine
 svm.lrn <- makeLearner("classif.svm")
