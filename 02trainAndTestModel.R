@@ -68,7 +68,7 @@ rf.tun <- tuneParams(rf.lrn, filtered.task, rdesc, par.set=rf.ps, control=ctrl)
 saveRDS(rf.tun, file.path("../data/rf.tun.rds"))
 rf.lrn <- makeLearner("classif.randomForest", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
 rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
-rf.lrn$id <- "Bagged Random Forest"
+rf.lrn$id <- "Random Forest"
 
 # neural network
 nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, trace=FALSE))
@@ -94,15 +94,15 @@ saveRDS(svm.tun, file.path("../data/svm.tun.rds"))
 svm.lrn <- makeLearner("classif.svm", par.vals = list(cost=svm.tun$x$cost, gamma=svm.tun$x$gamma))
 svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
 svm.lrn <- setPredictType(svm.lrn, predict.type="prob")
-svm.lrn$id <- "Support Vector Machine"
+svm.lrn$id <- "Bagged Support Vector Machine"
 
 parallelStop()
 
 ## benchmark
 parallelStartMulticore(detectCores(), level="mlr.resample")
 lrns <- list(rf.lrn, nn.lrn, svm.lrn)
-bmrk <- benchmark(lrns, filtered.task, rdesc)
-xlsx::write.xlsx(print(bmrk), file.path("../data/Results.xlsx"), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
+bmrk <- benchmark(lrns, filtered.task, rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
+xlsx::write.xlsx(getBMRAggrPerformances(bmrk, as.df=TRUE), file.path("../data/Results.xlsx"), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
 parallelStop()
 
 # boxplots
@@ -131,17 +131,18 @@ print(
 )
 dev.off()
 
+parallelStop()
 
 #### model testing
 ## cross-validation
-parallelStartMulticore(detectCores(), level="mlr.resample")
-res <- resample(rf.lrn, filtered.task, rdesc)
+parallelStartMulticore(detectCores())
+res <- resample(rf.lrn, filtered.task, rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
 saveRDS(res, file.path("../data/res.rds"))
 parallelStop()
 
 # export
-xlsx::write.xlsx(res$aggr, file.path("../data/Results.xlsx"), sheetName="CV Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
-xlsx::write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path("../data/Results.xlsx"), sheetName="CV Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
+xlsx::write.xlsx(res$aggr, file.path("../data/Results.xlsx"), sheetName="CV Performance Measures", row.names=TRUE, col.names=FALSE, append=TRUE)
+xlsx::write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path("../data/Results.xlsx"), sheetName="CV Confusion Matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
 
 ## train model
 mod <- train(rf.lrn, filtered.task, subset=train.set)
@@ -152,7 +153,7 @@ test.pred <- predict(mod, task=filtered.task, subset=test.set)
 saveRDS(test.pred, file.path("../data/test.pred.rds"))
 
 # export
-xlsx::write.xlsx(performance(test.pred), file.path("../data/Results.xlsx"), sheetName="Test Mean misclassification error", row.names=TRUE, col.names=FALSE, append=TRUE)
-xlsx::write.xlsx(as.data.frame(getConfMatrix(test.pred)), file.path("../data/Results.xlsx"), sheetName="Test Confusion matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
+xlsx::write.xlsx(performance(test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), file.path("../data/Results.xlsx"), sheetName="Test Performance Measures", row.names=TRUE, col.names=FALSE, append=TRUE)
+xlsx::write.xlsx(as.data.frame(getConfMatrix(test.pred)), file.path("../data/Results.xlsx"), sheetName="Test Confusion Matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
 
 parallelStop()
