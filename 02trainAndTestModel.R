@@ -119,7 +119,7 @@ print(
         geom_boxplot(aes(fill=learner.id)) +
         xlab("") +
         ylab("Misclassification error") +
-        scale_fill_brewer(palette="Set1", name="Algorithm") +
+        scale_fill_brewer(palette="Set1", name="Method") +
         theme_bw(base_size=14) +
         theme(
               axis.text.x=element_blank(),
@@ -139,7 +139,7 @@ print(
           facet_wrap(~ measure, nrow=2) +
           xlab("Measure") +
           ylab("Performance") +
-          scale_fill_brewer(palette="Set1", name="Algorithm") +
+          scale_fill_brewer(palette="Set1", name="Method") +
           theme_bw(base_size=14) +
           theme(
               axis.text.x=element_blank(),
