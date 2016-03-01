@@ -31,7 +31,12 @@ saveRDS(filtered.task, file.path("../data/filtered.task.rds"))
 fv <- generateFilterValuesData(filtered.task, method="information.gain")
 png(file.path("../data/FilteredFeatures.png"), height=10*150, width=10*150, res=150)
 print(
-    plotFilterValues(fv)
+    ggplot(data=fv$data, aes(x=reorder(name, -information.gain), y=information.gain)) +
+        geom_bar(stat="identity", colour="black", fill="#FF6600") +
+        xlab("") +
+        ylab("Information gain") +
+        theme_bw(base_size=16) +
+        theme(axis.text.x=element_text(angle=315, hjust=0))
 )
 dev.off()
 saveRDS(fv, file.path("../data/fv.rds"))
@@ -105,11 +110,41 @@ bmrk <- benchmark(lrns, filtered.task, rdesc, measures=list(mmce, acc, auc, tpr,
 xlsx::write.xlsx(getBMRAggrPerformances(bmrk, as.df=TRUE), file.path("../data/Results.xlsx"), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
 parallelStop()
 
-# boxplots
-png(file.path("../data/BenchmarkBoxplots.png"), height=10*150, width=10*150, res=150)
+# boxplots of mean misclassification error
+perf <- getBMRPerformances(bmrk, as.df=TRUE)
+perf <- perf[c("learner.id", "mmce")]
+png(file.path("../data/BenchmarkMmceBoxplots.png"), height=10*150, width=10*150, res=150)
 print(
-    plotBMRBoxplots(bmrk, measure=mmce) +
-        aes(colour=learner.id)
+      ggplot(data=perf, aes(x=learner.id, y=mmce)) +
+        geom_boxplot(aes(fill=learner.id)) +
+        xlab("") +
+        ylab("Misclassification error") +
+        scale_fill_brewer(palette="Set1", name="Algorithm") +
+        theme_bw(base_size=14) +
+        theme(
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank()
+        )
+)
+dev.off()
+
+# boxplots of other performance measures
+perf <- getBMRPerformances(bmrk, as.df=TRUE)
+names(perf)[5:ncol(perf)] <- c("Accuracy", "AUC", "Recall/Sensitivity", "Specificity", "Precision", "F1")
+perf <- reshape(perf, varying=names(perf)[5:ncol(perf)], v.names="value", timevar="measure", times=names(perf)[5:ncol(perf)], direction="long")
+png(file.path("../data/BenchmarkOtherBoxplots.png"), height=10*150, width=10*150, res=150)
+print(
+      ggplot(data=perf, aes(x=learner.id, y=value)) +
+          geom_boxplot(aes(fill=learner.id)) +
+          facet_wrap(~ measure, nrow=2) +
+          xlab("Measure") +
+          ylab("Performance") +
+          scale_fill_brewer(palette="Set1", name="Algorithm") +
+          theme_bw(base_size=14) +
+          theme(
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank()
+        )
 )
 dev.off()
 
@@ -130,7 +165,7 @@ dev.off()
 pr <- generateThreshVsPerfData(bmrk, measures=list(tpr, ppv))
 png(file.path("../data/BenchmarkPR.png"), height=10*150, width=10*150, res=150)
 print(
-      ggplot(data=roc$data, aes(x=tpr, y=ppv)) +
+      ggplot(data=pr$data, aes(x=tpr, y=ppv)) +
           geom_path(aes(color=learner), size=1.5) +
           xlab("Recall") +
           ylab("Precision") +
