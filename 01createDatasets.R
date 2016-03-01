@@ -7,41 +7,6 @@ ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
 chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
 
-### functions ###
-createNumericFeature <- function(genes, attribute, fun=median, mart=ensembl) {
-    feat <- getBM(
-                  attributes=c("ensembl_gene_id", attribute),
-                  filters="ensembl_gene_id",
-                  values=genes,
-                  mart=mart)
-    feat[feat==""] <- NA
-    feat <- na.omit(feat)
-    feat <- aggregate(feat[attribute], by=list(feat$ensembl_gene_id), FUN=fun)
-    names(feat) <- c("ensembl_gene_id", attribute)
-    feat <- merge(feat, genes, by="ensembl_gene_id", all=TRUE)
-    feat <- feat[order(feat$ensembl_gene_id), , drop=FALSE]
-    feat[is.na(feat)] <- 0
-    feat[2:ncol(feat)] <- lapply(feat[2:ncol(feat)], as.numeric)
-    return(feat)
-}
-
-createFactorFeature <- function(genes, attribute, mart=ensembl) {
-    feat <- getBM(
-                  attributes=c("ensembl_gene_id", attribute),
-                  filters="ensembl_gene_id",
-                  values=genes,
-                  mart=mart)
-    feat[feat==""] <- NA
-    feat <- na.omit(feat)
-    feat$feat <- 1
-    feat <- reshape(feat, idvar="ensembl_gene_id", timevar=attribute, direction="wide")
-    feat <- merge(feat, genes, by="ensembl_gene_id", all=TRUE)
-    feat <- feat[order(feat$ensembl_gene_id), , drop=FALSE]
-    feat[is.na(feat)] <- 0
-    feat[2:ncol(feat)] <- lapply(feat[2:ncol(feat)], as.factor)
-    return(feat)
-}
-
 ### data ###
 # get all protein coding genes
 genes <- getBM(
@@ -51,62 +16,16 @@ genes <- getBM(
                mart=ensembl)
 genes <- genes[order(genes$ensembl_gene_id), , drop=FALSE]
 
-# create numeric and factor features from Ensembl
-transcript_length <- createNumericFeature(genes, "transcript_length")
-transcript_count <- createNumericFeature(genes, "transcript_count")
-percentage_gc_content <- createNumericFeature(genes, "percentage_gc_content")
-cfamiliaris_homolog_perc_id <- createNumericFeature(genes, "cfamiliaris_homolog_perc_id")
-sscrofa_homolog_perc_id <- createNumericFeature(genes, "sscrofa_homolog_perc_id")
-rnorvegicus_homolog_perc_id <- createNumericFeature(genes, "rnorvegicus_homolog_perc_id")
-mmusculus_homolog_perc_id <- createNumericFeature(genes, "mmusculus_homolog_perc_id")
-drerio_homolog_perc_id <- createNumericFeature(genes, "drerio_homolog_perc_id")
-dmelanogaster_homolog_perc_id <- createNumericFeature(genes, "dmelanogaster_homolog_perc_id")
-celegans_homolog_perc_id <- createNumericFeature(genes, "celegans_homolog_perc_id")
-scerevisiae_homolog_perc_id <- createNumericFeature(genes, "scerevisiae_homolog_perc_id")
-low_complexity <- createFactorFeature(genes, "low_complexity")
-transmembrane_domain <- createFactorFeature(genes, "transmembrane_domain")
-signal_domain <- createFactorFeature(genes, "signal_domain")
-ncoils <- createFactorFeature(genes, "ncoils")
-interpro <- createFactorFeature(genes, "interpro")
-go_id <- createFactorFeature(genes, "go_id")
-reactome <- createFactorFeature(genes, "reactome")
-
-## create factor features from CTTV
-cttv <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/matrix.csv.gz")
+## create numeric features from cttv
+completeset <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/matrix.csv.gz")
 # only use direct associations, remove known_drug and literature
-cttv <- subset(cttv, Is.direct == "True", c(EnsemblId, OntologyId, genetic_association, somatic_mutation, rna_expression, affected_pathway, animal_model))
+completeset <- subset(completeset, Is.direct == "True", c(EnsemblId, OntologyId, genetic_association, somatic_mutation, rna_expression, affected_pathway, animal_model))
 # remove lower confidence animal_model associations
-cttv$animal_model[cttv$animal_model < 0.75] <- 0
-# reshape to wide
-cttv <- reshape(cttv, timevar="OntologyId", idvar="EnsemblId", direction="wide")
-# replace NAs
-cttv[is.na(cttv)] <- 0
-# replace values between 0 and 1
-cttv[cttv > 0] <- 1
-# encode as factor
-cttv <- as.data.frame(lapply(cttv, as.factor))
-
-# generate complete set with all features
-completeset <- cbind(genes,
-                 transcript_length[2:ncol(transcript_length)],
-                 transcript_count[2:ncol(transcript_count)],
-                 percentage_gc_content[2:ncol(percentage_gc_content)],
-                 mmusculus_homolog_perc_id[2:ncol(mmusculus_homolog_perc_id)],
-                 drerio_homolog_perc_id[2:ncol(drerio_homolog_perc_id)],
-                 dmelanogaster_homolog_perc_id[2:ncol(dmelanogaster_homolog_perc_id)],
-                 celegans_homolog_perc_id[2:ncol(celegans_homolog_perc_id)],
-                 scerevisiae_homolog_perc_id[2:ncol(scerevisiae_homolog_perc_id)],
-                 low_complexity[2:ncol(low_complexity)],
-                 transmembrane_domain[2:ncol(transmembrane_domain)],
-                 signal_domain[2:ncol(signal_domain)],
-                 ncoils[2:ncol(ncoils)],
-                 interpro[2:ncol(interpro)],
-                 go_id[2:ncol(go_id)],
-                 reactome[2:ncol(reactome)]
-                 )
-completeset <- merge(completeset, cttv, by.x="ensembl_gene_id", by.y="EnsemblId", all.x=TRUE, all.y=FALSE)
-completeset[is.na(completeset)] <- 0
-names(completeset) <- gsub("[-:]", "_", names(completeset))
+completeset$animal_model[completeset$animal_model < 0.75] <- 0
+# aggregate
+completeset <- aggregate(completeset[3:ncol(completeset)], by=list(EnsemblId=completeset$EnsemblId), FUN=mean)
+# merge
+completeset <- merge(genes, completeset, by=1, all=FALSE)
 saveRDS(completeset, file.path("../data/completeset.rds"))
 
 # read targetpedia data for target information

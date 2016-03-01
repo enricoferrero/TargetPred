@@ -24,14 +24,11 @@ rdesc <- makeResampleDesc("CV", iters=cv.n)
 ctrl <- makeTuneControlGrid()
 
 ## feature selection
-# first, remove constant features and those that differ less than 1% from the mode (most frequent number) of the data
-filtered.task <- removeConstantFeatures(classif.task, perc=0.01)
-saveRDS(filtered.task, file.path("../data/filtered.task.rds"))
-# then, perform feature selection using method of choice and keep top 250
-filtered.task <- filterFeatures(filtered.task, method="mrmr", abs=250)
+# simply remove constatn features (if any)
+filtered.task <- removeConstantFeatures(classif.task)
 saveRDS(filtered.task, file.path("../data/filtered.task.rds"))
 # filtered features
-fv <- generateFilterValuesData(filtered.task, method="mrmr")
+fv <- generateFilterValuesData(filtered.task, method="information.gain")
 png(file.path("../data/FilteredFeatures.png"), height=10*150, width=10*150, res=150)
 print(
     plotFilterValues(fv)
