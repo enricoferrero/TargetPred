@@ -64,7 +64,7 @@ dt.tun <- tuneParams(dt.lrn, filtered.task, rdesc, par.set=dt.ps, control=ctrl)
 dt.lrn <- makeLearner("classif.rpart", par.vals = list(cp=dt.tun$x$cp))
 dt.lrn <- makeBaggingWrapper(dt.lrn, bw.iters=bag.n)
 dt.lrn <- setPredictType(dt.lrn, predict.type="prob")
-dt.lrn$id <- "Bagged Decision Tree"
+dt.lrn$id <- "Decision Tree"
 
 # random forest
 rf.lrn <- makeLearner("classif.randomForest")
@@ -89,7 +89,7 @@ saveRDS(nn.tun, file.path("../data/nn.tun.rds"))
 nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, trace=FALSE, size=nn.tun$x$size, decay=nn.tun$x$decay))
 nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
 nn.lrn <- setPredictType(nn.lrn, predict.type="prob")
-nn.lrn$id <- "Bagged Neural Network"
+nn.lrn$id <- "Neural Network"
 
 # support vector machine
 svm.lrn <- makeLearner("classif.svm")
@@ -102,13 +102,13 @@ saveRDS(svm.tun, file.path("../data/svm.tun.rds"))
 svm.lrn <- makeLearner("classif.svm", par.vals = list(cost=svm.tun$x$cost, gamma=svm.tun$x$gamma))
 svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
 svm.lrn <- setPredictType(svm.lrn, predict.type="prob")
-svm.lrn$id <- "Bagged Support Vector Machine"
+svm.lrn$id <- "Support Vector Machine"
 
 parallelStop()
 
 ## benchmark
 parallelStartMulticore(detectCores(), level="mlr.resample")
-lrns <- list(rf.lrn, nn.lrn, svm.lrn)
+lrns <- list(dt.lrn, rf.lrn, nn.lrn, svm.lrn)
 bmrk <- benchmark(lrns, filtered.task, rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
 xlsx::write.xlsx(getBMRAggrPerformances(bmrk, as.df=TRUE), file.path("../data/Results.xlsx"), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
 parallelStop()
@@ -180,9 +180,11 @@ dev.off()
 parallelStop()
 
 #### model testing
+bst.lrn <- dt.lrn
+
 ## cross-validation
 parallelStartMulticore(detectCores())
-res <- resample(rf.lrn, filtered.task, rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
+res <- resample(bst.lrn, filtered.task, rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
 saveRDS(res, file.path("../data/res.rds"))
 parallelStop()
 
@@ -191,7 +193,7 @@ xlsx::write.xlsx(res$aggr, file.path("../data/Results.xlsx"), sheetName="CV Perf
 xlsx::write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path("../data/Results.xlsx"), sheetName="CV Confusion Matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
 
 ## train model
-mod <- train(rf.lrn, filtered.task, subset=train.set)
+mod <- train(bst.lrn, filtered.task, subset=train.set)
 saveRDS(mod, file.path("../data/mod.rds"))
 
 ## evaluate performance on test set
