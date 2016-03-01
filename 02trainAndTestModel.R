@@ -117,8 +117,12 @@ dev.off()
 roc <- generateThreshVsPerfData(bmrk, measures=list(fpr, tpr))
 png(file.path("../data/BenchmarkROC.png"), height=10*150, width=10*150, res=150)
 print(
-    #plotROCCurves(generateThreshVsPerfData(bmrk, measures=list(fpr, tpr)), diagonal=TRUE) # faceted plot
-    qplot(x=fpr, y=tpr, color=learner, data=roc$data, geom="path", xlab="False positive rate", ylab="True positive rate")
+      ggplot(data=roc$data, aes(x=fpr, y=tpr)) +
+          geom_path(aes(color=learner), size=1.5) +
+          xlab("False positive rate") +
+          ylab("True positive rate") +
+          theme_bw(base_size=14) +
+          scale_colour_brewer(palette="Set1")
 )
 dev.off()
 
@@ -126,8 +130,12 @@ dev.off()
 pr <- generateThreshVsPerfData(bmrk, measures=list(tpr, ppv))
 png(file.path("../data/BenchmarkPR.png"), height=10*150, width=10*150, res=150)
 print(
-    #plotROCCurves(generateThreshVsPerfData(bmrk, measures=list(ppv, tpr)), diagonal=FALSE) # faceted plot
-    qplot(x=ppv, y=tpr, color=learner, data=pr$data, geom="path", xlab="Precision", ylab="Recall")
+      ggplot(data=roc$data, aes(x=tpr, y=ppv)) +
+          geom_path(aes(color=learner), size=1.5) +
+          xlab("Recall") +
+          ylab("Precision") +
+          theme_bw(base_size=14) +
+          scale_colour_brewer(palette="Set1")
 )
 dev.off()
 
