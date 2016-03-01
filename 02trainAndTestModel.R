@@ -32,12 +32,12 @@ filtered.task <- filterFeatures(filtered.task, method="mrmr", abs=250)
 saveRDS(filtered.task, file.path("../data/filtered.task.rds"))
 # filtered features
 fv <- generateFilterValuesData(filtered.task, method="mrmr")
-png(file.path("../data/FilteredFeatures.png"), height=10*150, width=10*150, res=150)
+png(file.path("../data/FilteredFeatures.png"), height=10*150, width=15*150, res=150)
 print(
-    ggplot(data=fv$data, aes(x=reorder(name, -information.gain), y=information.gain)) +
+    ggplot(data=head(fv$data, 30), aes(x=reorder(name, -mrmr), y=mrmr)) +
         geom_bar(stat="identity", colour="black", fill="#FF6600") +
         xlab("") +
-        ylab("Information gain") +
+        ylab("Minimum redundancy maxium relevance") +
         theme_bw(base_size=16) +
         theme(axis.text.x=element_text(angle=315, hjust=0))
 )
