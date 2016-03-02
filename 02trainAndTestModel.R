@@ -36,7 +36,8 @@ print(
         xlab("") +
         ylab("Information gain") +
         theme_bw(base_size=16) +
-        theme(axis.text.x=element_text(angle=315, hjust=0))
+        theme(axis.text.x=element_text(angle=315, hjust=0)) +
+        theme(plot.margin=unit(c(1,3,1,1), "cm"))
 )
 dev.off()
 saveRDS(fv, file.path("../data/fv.rds"))
@@ -58,8 +59,8 @@ dt.ps <- makeParamSet(
                       makeDiscreteParam("cp", values = c(0.001, 0.0025, 0.005, 0.01, 0.025, 0.05))
                       )
 dt.tun <- tuneParams(dt.lrn, filtered.task, rdesc, par.set=dt.ps, control=ctrl)
+saveRDS(dt.tun, file.path("../data/dt.tun.rds"))
 dt.lrn <- makeLearner("classif.rpart", par.vals = list(cp=dt.tun$x$cp))
-dt.lrn <- makeBaggingWrapper(dt.lrn, bw.iters=bag.n)
 dt.lrn <- setPredictType(dt.lrn, predict.type="prob")
 dt.lrn$id <- "Decision Tree"
 
@@ -177,7 +178,7 @@ dev.off()
 parallelStop()
 
 #### model testing
-bst.lrn <- dt.lrn
+bst.lrn <- rf.lrn
 
 ## cross-validation
 parallelStartMulticore(detectCores())
@@ -202,3 +203,16 @@ xlsx::write.xlsx(performance(test.pred, measures=list(mmce, acc, auc, tpr, tnr, 
 xlsx::write.xlsx(as.data.frame(getConfMatrix(test.pred)), file.path("../data/Results.xlsx"), sheetName="Test Confusion Matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
 
 parallelStop()
+
+### inference
+inf.lrn <- dt.lrn
+
+## train model
+inf.mod <- train(inf.lrn, filtered.task, subset=train.set)
+saveRDS(inf.mod, file.path("../data/inf.mod.rds"))
+inf.mod <- inf.mod$learner.model
+
+## plot tree
+png(file.path("../data/DecisionTree.png"), height=10*300, width=10*300, res=300)
+rpart.plot::prp(inf.mod, type=2, extra=101, box.col=c("lightblue", "lightgreen")[inf.mod$frame$yval])
+dev.off()
