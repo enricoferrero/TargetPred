@@ -217,5 +217,5 @@ inf.mod <- inf.mod$learner.model
 
 ## plot tree
 png(file.path("../data/DecisionTree.png"), height=10*300, width=10*300, res=300)
-rpart.plot::prp(inf.mod, type=2, extra=101, box.col=c("lightblue", "lightgreen")[inf.mod$frame$yval])
+rpart.plot::prp(inf.mod, type=2, extra=101, varlen=0, box.col=c("lightblue", "lightgreen")[inf.mod$frame$yval])
 dev.off()
