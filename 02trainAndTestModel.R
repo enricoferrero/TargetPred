@@ -117,15 +117,13 @@ perf <- perf[c("learner.id", "mmce")]
 png(file.path("../data/BenchmarkMmceBoxplots.png"), height=10*150, width=10*150, res=150)
 print(
       ggplot(data=perf, aes(x=learner.id, y=mmce)) +
-        geom_boxplot(aes(fill=learner.id)) +
-        xlab("") +
-        ylab("Misclassification error") +
-        scale_fill_brewer(palette="Set1", name="Method") +
-        theme_bw(base_size=14) +
-        theme(
-              axis.text.x=element_blank(),
-              axis.ticks.x=element_blank()
-        )
+          geom_boxplot(aes(fill=learner.id)) +
+          xlab("") +
+          ylab("Misclassification error") +
+          scale_fill_brewer(palette="Set1", name="Classifier") +
+          theme_bw(base_size=14) +
+          theme(axis.text.x=element_blank()) +
+          theme(axis.ticks.x=element_blank())
 )
 dev.off()
 
@@ -140,12 +138,10 @@ print(
           facet_wrap(~ measure, nrow=2) +
           xlab("Measure") +
           ylab("Performance") +
-          scale_fill_brewer(palette="Set1", name="Method") +
+          scale_fill_brewer(palette="Set1", name="Classifier") +
           theme_bw(base_size=14) +
-          theme(
-              axis.text.x=element_blank(),
-              axis.ticks.x=element_blank()
-        )
+          theme(axis.text.x=element_blank()) +
+          theme(axis.ticks.x=element_blank())
 )
 dev.off()
 
@@ -157,8 +153,8 @@ print(
           geom_path(aes(color=learner), size=1.5) +
           xlab("False positive rate") +
           ylab("True positive rate") +
-          theme_bw(base_size=14) +
-          scale_colour_brewer(palette="Set1")
+          scale_fill_brewer(palette="Set1", name="Classifier") +
+          theme_bw(base_size=14)
 )
 dev.off()
 
@@ -170,8 +166,8 @@ print(
           geom_path(aes(color=learner), size=1.5) +
           xlab("Recall") +
           ylab("Precision") +
-          theme_bw(base_size=14) +
-          scale_colour_brewer(palette="Set1")
+          scale_fill_brewer(palette="Set1", name="Classifier") +
+          theme_bw(base_size=14)
 )
 dev.off()
 
