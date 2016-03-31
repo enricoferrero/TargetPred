@@ -31,11 +31,11 @@ saveRDS(completeset, file.path("../data/completeset.rds"))
 # read targetpedia data for target information
 targetpedia <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/targetpedia/targetpedia_triples.txt")
 targetpedia <- subset(targetpedia,
-                            Status == "Active" |
-                            Status == "Completed" |
-                            Status == "Proposed" |
-                            Status == "Under Review-Progressing" |
-                            Status == "Under Review-On Hold")
+                            PROJECT_STATUS == "Active" |
+                            PROJECT_STATUS == "Completed" |
+                            PROJECT_STATUS == "Progressing" |
+                            PROJECT_STATUS == "Proposed" |
+                            PROJECT_STATUS == "Under Review-On Hold")
 targetpedia <- getBM(
                 attributes="ensembl_gene_id",
                 filters=c("entrezgene", "chromosome_name", "biotype"),
