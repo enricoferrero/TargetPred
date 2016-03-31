@@ -46,7 +46,6 @@ targetpedia <- getBM(
 pharmaprojects <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/pipeline/pipeline_triples.txt")
 pharmaprojects <- subset(pharmaprojects,
                                 GlobalStatus == "Clinical Trial" |
-                                GlobalStatus == "Discontinued" |
                                 GlobalStatus == "Launched" |
                                 GlobalStatus == "Phase I Clinical Trial" |
                                 GlobalStatus == "Phase II Clinical Trial" |
