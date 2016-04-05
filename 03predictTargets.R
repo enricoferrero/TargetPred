@@ -18,7 +18,7 @@ tas <- readRDS(file.path("../data/tas.rds"))
 # divide workflow by therapeutic area
 for (ta in names(tas)) {
 
-    predictionset <- readRDS(file.path("../data", ta, "predicitionset.rds"))
+    predictionset <- readRDS(file.path("../data", ta, "predictionset.rds"))
     mod <- readRDS(file.path("../data", ta, "mod.rds"))
 
     ### predict ###
@@ -35,6 +35,7 @@ for (ta in names(tas)) {
     predres <- predres[c("Ensembl", "Entrez", "Symbol", "Prediction", "TargetProb", "UnknownProb")]
     write.csv(predres, file.path("../data", ta, "PredicitonResults.csv"), quote=FALSE, row.names=FALSE)
 
-    parallelStop()
 
 }
+
+parallelStop()

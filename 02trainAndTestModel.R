@@ -34,7 +34,7 @@ for (ta in names(tas)) {
 
     # features
     fv <- generateFilterValuesData(classif.task, method=c("variance", "kruskal.test", "chi.squared", "information.gain"))
-    saveRDS(fv, file.path("../data/fv.rds"))
+    saveRDS(fv, file.path("../data", ta, "fv.rds"))
     png(file.path("../data/", ta, "Features.png"), height=10*150, width=10*150, res=150)
     print(
         plotFilterValues(fv) +
@@ -45,7 +45,6 @@ for (ta in names(tas)) {
         theme(axis.text.x = element_text(angle=45, hjust=1))
     )
     dev.off()
-    saveRDS(fv, file.path("../data", ta, "fv.rds"))
     # number of observations
     no <- getTaskSize(classif.task)
     # number of features
