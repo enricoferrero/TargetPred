@@ -30,7 +30,8 @@ for (ta in names(tas)) {
     saveRDS(classif.task, file.path("../data", ta, "classif.task.rds"))
 
     # features
-    fv <- generateFilterValuesData(classif.task, method="information.gain")
+    fv <- generateFilterValuesData(classif.task, method=c("variance", "kruskal.test", "chi.squared", "information.gain"))
+    saveRDS(fv, file.path("../data/fv.rds"))
     png(file.path("../data/Features.png"), height=10*150, width=10*150, res=150)
     plotFilterValues(fv) +
         geom_bar(aes(fill=method), stat="identity", colour="black") +
