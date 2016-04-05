@@ -17,13 +17,13 @@ genes <- getBM(
                mart=ensembl)
 genes <- genes[order(genes$ensembl_gene_id), , drop=FALSE]
 
-# create numeric features from cttv
 # read cttv master file
 completeset <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/matrix.csv.gz")
 # only use direct associations, remove known_drug and literature
 completeset <- subset(completeset, Is.direct == "True", c(EnsemblId, OntologyId, genetic_association, somatic_mutation, rna_expression, affected_pathway, animal_model))
 # remove lower confidence animal_model associations
 completeset$animal_model[completeset$animal_model < 0.75] <- 0
+
 # read therapeutic area mappings
 tas <- read.csv("../data/disease_tas.csv")
 # split comma-separated therapeutic areas
@@ -33,6 +33,38 @@ tas <- tas[c("OntologyId", "Therapeutic.areas")]
 # split into list
 tas <- split(tas, tas$Therapeutic.areas)
 tas <- lapply(tas, function(x) unique(x["OntologyId"]))
+
+# read targetpedia data for target information
+targetpedia <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/targetpedia/targetpedia_triples.txt")
+targetpedia <- subset(targetpedia,
+                            PROJECT_STATUS == "Active" |
+                            PROJECT_STATUS == "Completed" |
+                            PROJECT_STATUS == "Progressing" |
+                            PROJECT_STATUS == "Proposed" |
+                            PROJECT_STATUS == "Under Review-On Hold")
+targetpedia <- getBM(
+                attributes="ensembl_gene_id",
+                filters=c("entrezgene", "chromosome_name", "biotype"),
+                values=list(targetpedia$Target_EntrezGeneId, chr, type),
+                mart=ensembl)
+
+# read pharmaprojects data for target information
+pharmaprojects <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/pipeline/pipeline_triples.txt")
+pharmaprojects <- subset(pharmaprojects,
+                                GlobalStatus == "Clinical Trial" |
+                                GlobalStatus == "Launched" |
+                                GlobalStatus == "Phase I Clinical Trial" |
+                                GlobalStatus == "Phase II Clinical Trial" |
+                                GlobalStatus == "Phase III Clinical Trial" |
+                                GlobalStatus == "Pre-registration" |
+                                GlobalStatus == "Preclinical" |
+                                GlobalStatus == "Registered")
+pharmaprojects <- getBM(
+                        attributes="ensembl_gene_id",
+                        filters=c("entrezgene", "chromosome_name", "biotype"),
+                        values=list(pharmaprojects$Target_EntrezGeneId, chr, type),
+                        mart=ensembl)
+
 
 # divide workflow by therapeutic area
 for (ta in names(tas)) {
@@ -46,37 +78,6 @@ for (ta in names(tas)) {
     # only keep protein coding genes
     completeset.ta <- merge(genes, completeset.ta, by=1, all=FALSE)
     saveRDS(completeset.ta, file.path("../data", ta, "completeset.rds"))
-
-    # read targetpedia data for target information
-    targetpedia <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/targetpedia/targetpedia_triples.txt")
-    targetpedia <- subset(targetpedia,
-                                PROJECT_STATUS == "Active" |
-                                PROJECT_STATUS == "Completed" |
-                                PROJECT_STATUS == "Progressing" |
-                                PROJECT_STATUS == "Proposed" |
-                                PROJECT_STATUS == "Under Review-On Hold")
-    targetpedia <- getBM(
-                    attributes="ensembl_gene_id",
-                    filters=c("entrezgene", "chromosome_name", "biotype"),
-                    values=list(targetpedia$Target_EntrezGeneId, chr, type),
-                    mart=ensembl)
-
-    # read pharmaprojects data for target information
-    pharmaprojects <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/pipeline/pipeline_triples.txt")
-    pharmaprojects <- subset(pharmaprojects,
-                                    GlobalStatus == "Clinical Trial" |
-                                    GlobalStatus == "Launched" |
-                                    GlobalStatus == "Phase I Clinical Trial" |
-                                    GlobalStatus == "Phase II Clinical Trial" |
-                                    GlobalStatus == "Phase III Clinical Trial" |
-                                    GlobalStatus == "Pre-registration" |
-                                    GlobalStatus == "Preclinical" |
-                                    GlobalStatus == "Registered")
-    pharmaprojects <- getBM(
-                            attributes="ensembl_gene_id",
-                            filters=c("entrezgene", "chromosome_name", "biotype"),
-                            values=list(pharmaprojects$Target_EntrezGeneId, chr, type),
-                            mart=ensembl)
 
     # positive cases: these are targets according to targetpedia and/or pharmaprojects
     positive <- unique(rbind(targetpedia, pharmaprojects))
