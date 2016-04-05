@@ -11,6 +11,9 @@ ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
 chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
 
+## therapeutic areas
+tas <- readRDS(file.path("../data/tas.rds"))
+
 ### data ###
 # divide workflow by therapeutic area
 for (ta in names(tas)) {

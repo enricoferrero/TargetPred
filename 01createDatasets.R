@@ -33,6 +33,7 @@ tas <- tas[c("OntologyId", "Therapeutic.areas")]
 # split into list
 tas <- split(tas, tas$Therapeutic.areas)
 tas <- lapply(tas, function(x) unique(x["OntologyId"]))
+saveRDS(tas, file.path("../data/tas.rds"))
 
 # read targetpedia data for target information
 targetpedia <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/targetpedia/targetpedia_triples.txt")

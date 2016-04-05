@@ -14,6 +14,9 @@ rdesc <- makeResampleDesc("CV", iters=cv.n)
 ## tuning control
 ctrl <- makeTuneControlGrid()
 
+## therapeutic areas
+tas <- readRDS(file.path("../data/tas.rds"))
+
 # divide workflow by therapeutic area
 for (ta in names(tas)) {
 
@@ -32,13 +35,15 @@ for (ta in names(tas)) {
     # features
     fv <- generateFilterValuesData(classif.task, method=c("variance", "kruskal.test", "chi.squared", "information.gain"))
     saveRDS(fv, file.path("../data/fv.rds"))
-    png(file.path("../data/Features.png"), height=10*150, width=10*150, res=150)
-    plotFilterValues(fv) +
+    png(file.path("../data/", ta, "Features.png"), height=10*150, width=10*150, res=150)
+    print(
+        plotFilterValues(fv) +
         geom_bar(aes(fill=method), stat="identity", colour="black") +
         ggtitle("") +
         theme_bw(base_size=14) +
         theme(legend.position="none") +
         theme(axis.text.x = element_text(angle=45, hjust=1))
+    )
     dev.off()
     saveRDS(fv, file.path("../data", ta, "fv.rds"))
     # number of observations
