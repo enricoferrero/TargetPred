@@ -25,7 +25,7 @@ completeset <- subset(completeset, Is.direct == "True", c(EnsemblId, OntologyId,
 completeset$animal_model[completeset$animal_model < 0.75] <- 0
 
 # read therapeutic area mappings
-tas <- read.csv("../data/disease_tas.csv")
+tas <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/disease_tas.csv")
 # split comma-separated therapeutic areas
 tas <- as.data.frame(cSplit(tas, "Therapeutic.areas", sep=",", direction="long"))
 # remove useless columns
