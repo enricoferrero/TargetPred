@@ -15,6 +15,8 @@ dataset <- readRDS(file.path("../data/dataset.rds"))
 
 ## task
 classif.task <- makeClassifTask(id="TargetPred", data=dataset, target="target", positive="1")
+# simply remove constatn features (if any)
+classif.task <- removeConstantFeatures(classif.task)
 saveRDS(classif.task, file.path("../data/classif.task.rds"))
 
 ## resampling strategy
@@ -24,27 +26,25 @@ rdesc <- makeResampleDesc("CV", iters=cv.n)
 ctrl <- makeTuneControlGrid()
 
 ## feature selection
-# simply remove constatn features (if any)
-filtered.task <- removeConstantFeatures(classif.task)
-saveRDS(filtered.task, file.path("../data/filtered.task.rds"))
-# filtered features
-fv <- generateFilterValuesData(filtered.task, method="information.gain")
-png(file.path("../data/FilteredFeatures.png"), height=10*150, width=10*150, res=150)
+
+# features
+fv <- generateFilterValuesData(classif.task, method=c("variance", "kruskal.test", "chi.squared", "information.gain"))
+saveRDS(fv, file.path("../data/fv.rds"))
+png(file.path("../data/Features.png"), height=10*150, width=10*150, res=150)
 print(
-    ggplot(data=fv$data, aes(x=reorder(name, -information.gain), y=information.gain)) +
-        geom_bar(stat="identity", colour="black", fill="#FF6600") +
-        xlab("") +
-        ylab("Information gain") +
-        theme_bw(base_size=16) +
-        theme(axis.text.x=element_text(angle=315, hjust=0)) +
-        theme(plot.margin=unit(c(1,3,1,1), "cm"))
+    plotFilterValues(fv) +
+    geom_bar(aes(fill=method), stat="identity", colour="black") +
+    ggtitle("") +
+    theme_bw(base_size=14) +
+    theme(legend.position="none") +
+    theme(axis.text.x = element_text(angle=45, hjust=1))
 )
 dev.off()
-saveRDS(fv, file.path("../data/fv.rds"))
+
 # number of observations
-no <- getTaskSize(filtered.task)
+no <- getTaskSize(classif.task)
 # number of features
-nf <- getTaskNFeats(filtered.task)
+nf <- getTaskNFeats(classif.task)
 
 ## training and test set
 train.set <- sample(no, size = round(0.8*no))
@@ -58,7 +58,7 @@ dt.lrn <- makeLearner("classif.rpart")
 dt.ps <- makeParamSet(
                       makeDiscreteParam("cp", values = c(0.001, 0.0025, 0.005, 0.01, 0.025, 0.05))
                       )
-dt.tun <- tuneParams(dt.lrn, filtered.task, rdesc, par.set=dt.ps, control=ctrl)
+dt.tun <- tuneParams(dt.lrn, classif.task, rdesc, par.set=dt.ps, control=ctrl)
 saveRDS(dt.tun, file.path("../data/dt.tun.rds"))
 dt.lrn <- makeLearner("classif.rpart", par.vals = list(cp=dt.tun$x$cp))
 dt.lrn <- setPredictType(dt.lrn, predict.type="prob")
@@ -70,7 +70,7 @@ rf.ps <- makeParamSet(
                       makeDiscreteParam("ntree", values = c(250, 500, 1000, 2500, 5000)),
                       makeDiscreteParam("mtry", values = c(2, 3, 4, 5))
 )
-rf.tun <- tuneParams(rf.lrn, filtered.task, rdesc, par.set=rf.ps, control=ctrl)
+rf.tun <- tuneParams(rf.lrn, classif.task, rdesc, par.set=rf.ps, control=ctrl)
 saveRDS(rf.tun, file.path("../data/rf.tun.rds"))
 rf.lrn <- makeLearner("classif.randomForest", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
 rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
@@ -82,7 +82,7 @@ nn.ps <- makeParamSet(
                       makeDiscreteParam("size", values = c(2, 3, 5, 7, 10)),
                       makeDiscreteParam("decay", values = c(0.5, 0.25, 0.1, 0))
 )
-nn.tun <- tuneParams(nn.lrn, filtered.task, rdesc, par.set=nn.ps, control=ctrl)
+nn.tun <- tuneParams(nn.lrn, classif.task, rdesc, par.set=nn.ps, control=ctrl)
 saveRDS(nn.tun, file.path("../data/nn.tun.rds"))
 nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, trace=FALSE, size=nn.tun$x$size, decay=nn.tun$x$decay))
 nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
@@ -95,7 +95,7 @@ svm.ps <- makeParamSet(
                         makeDiscreteParam("gamma", values = 2^(-2:2)),
                         makeDiscreteParam("cost", values = 2^(-2:2))
 )
-svm.tun <- tuneParams(svm.lrn, filtered.task, rdesc, par.set=svm.ps, control=ctrl)
+svm.tun <- tuneParams(svm.lrn, classif.task, rdesc, par.set=svm.ps, control=ctrl)
 saveRDS(svm.tun, file.path("../data/svm.tun.rds"))
 svm.lrn <- makeLearner("classif.svm", par.vals = list(cost=svm.tun$x$cost, gamma=svm.tun$x$gamma))
 svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
@@ -107,7 +107,7 @@ parallelStop()
 ## benchmark
 parallelStartMulticore(detectCores(), level="mlr.resample")
 lrns <- list(dt.lrn, rf.lrn, nn.lrn, svm.lrn)
-bmrk <- benchmark(lrns, filtered.task, rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
+bmrk <- benchmark(lrns, classif.task, rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
 xlsx::write.xlsx(getBMRAggrPerformances(bmrk, as.df=TRUE), file.path("../data/Results.xlsx"), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
 parallelStop()
 
@@ -150,10 +150,10 @@ roc <- generateThreshVsPerfData(bmrk, measures=list(fpr, tpr))
 png(file.path("../data/BenchmarkROC.png"), height=10*150, width=10*150, res=150)
 print(
       ggplot(data=roc$data, aes(x=fpr, y=tpr)) +
-          geom_path(aes(color=learner), size=1.5) +
+          geom_path(aes(colour=learner), size=1.5) +
           xlab("False positive rate") +
           ylab("True positive rate") +
-          scale_fill_brewer(palette="Set1", name="Classifier") +
+          scale_colour_brewer(palette="Set1", name="Classifier") +
           theme_bw(base_size=14)
 )
 dev.off()
@@ -163,10 +163,10 @@ pr <- generateThreshVsPerfData(bmrk, measures=list(tpr, ppv))
 png(file.path("../data/BenchmarkPR.png"), height=10*150, width=10*150, res=150)
 print(
       ggplot(data=pr$data, aes(x=tpr, y=ppv)) +
-          geom_path(aes(color=learner), size=1.5) +
+          geom_path(aes(colour=learner), size=1.5) +
           xlab("Recall") +
           ylab("Precision") +
-          scale_fill_brewer(palette="Set1", name="Classifier") +
+          scale_colour_brewer(palette="Set1", name="Classifier") +
           theme_bw(base_size=14)
 )
 dev.off()
@@ -178,7 +178,7 @@ bst.lrn <- rf.lrn
 
 ## cross-validation
 parallelStartMulticore(detectCores())
-res <- resample(bst.lrn, filtered.task, rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
+res <- resample(bst.lrn, classif.task, rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
 saveRDS(res, file.path("../data/res.rds"))
 parallelStop()
 
@@ -187,11 +187,11 @@ xlsx::write.xlsx(res$aggr, file.path("../data/Results.xlsx"), sheetName="CV Perf
 xlsx::write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path("../data/Results.xlsx"), sheetName="CV Confusion Matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
 
 ## train model
-mod <- train(bst.lrn, filtered.task, subset=train.set)
+mod <- train(bst.lrn, classif.task, subset=train.set)
 saveRDS(mod, file.path("../data/mod.rds"))
 
 ## evaluate performance on test set
-test.pred <- predict(mod, task=filtered.task, subset=test.set)
+test.pred <- predict(mod, task=classif.task, subset=test.set)
 saveRDS(test.pred, file.path("../data/test.pred.rds"))
 
 # export
@@ -204,7 +204,7 @@ parallelStop()
 inf.lrn <- dt.lrn
 
 ## train model
-inf.mod <- train(inf.lrn, filtered.task, subset=train.set)
+inf.mod <- train(inf.lrn, classif.task, subset=train.set)
 saveRDS(inf.mod, file.path("../data/inf.mod.rds"))
 inf.mod <- inf.mod$learner.model
 
