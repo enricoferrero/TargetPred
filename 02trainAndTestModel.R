@@ -45,6 +45,10 @@ dev.off()
 nf <- getTaskNFeats(classif.task)
 # number of observations
 no <- getTaskSize(classif.task)
+# number of positives
+np <- sum(getTaskTargets(classif.task)==1)
+# number of unknown/unlabelled
+nn <- sum(getTaskTargets(classif.task)==0)
 
 ## training and test set
 train.set <- sample(no, size = round(0.8*no))
@@ -55,17 +59,20 @@ parallelStartMulticore(detectCores())
 
 # decision tree
 dt.lrn <- makeLearner("classif.rpart")
+dt.lrn <- makeWeightedClassesWrapper(dt.lrn, wcw.weight=nn/np)
 dt.ps <- makeParamSet(
                       makeDiscreteParam("cp", values = c(0.001, 0.0025, 0.005, 0.01, 0.025, 0.05))
                       )
 dt.tun <- tuneParams(dt.lrn, subsetTask(classif.task, subset=train.set), rdesc, par.set=dt.ps, control=ctrl)
 saveRDS(dt.tun, file.path("../data/dt.tun.rds"))
 dt.lrn <- makeLearner("classif.rpart", par.vals = list(cp=dt.tun$x$cp))
+dt.lrn <- makeWeightedClassesWrapper(dt.lrn, wcw.weight=nn/np)
 dt.lrn <- setPredictType(dt.lrn, predict.type="prob")
 dt.lrn$id <- "Decision Tree"
 
 # random forest
 rf.lrn <- makeLearner("classif.randomForest")
+rf.lrn <- makeWeightedClassesWrapper(rf.lrn, wcw.weight=nn/np)
 rf.ps <- makeParamSet(
                       makeDiscreteParam("ntree", values = c(250, 500, 1000, 2500, 5000)),
                       makeDiscreteParam("mtry", values = c(2, 3, 4, 5))
@@ -73,11 +80,13 @@ rf.ps <- makeParamSet(
 rf.tun <- tuneParams(rf.lrn, subsetTask(classif.task, subset=train.set), rdesc, par.set=rf.ps, control=ctrl)
 saveRDS(rf.tun, file.path("../data/rf.tun.rds"))
 rf.lrn <- makeLearner("classif.randomForest", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
+rf.lrn <- makeWeightedClassesWrapper(rf.lrn, wcw.weight=nn/np)
 rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
 rf.lrn$id <- "Random Forest"
 
 # neural network
 nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, trace=FALSE))
+nn.lrn <- makeWeightedClassesWrapper(nn.lrn, wcw.weight=nn/np)
 nn.ps <- makeParamSet(
                       makeDiscreteParam("size", values = c(2, 3, 5, 7, 10)),
                       makeDiscreteParam("decay", values = c(0.5, 0.25, 0.1, 0))
@@ -85,12 +94,14 @@ nn.ps <- makeParamSet(
 nn.tun <- tuneParams(nn.lrn, subsetTask(classif.task, subset=train.set), rdesc, par.set=nn.ps, control=ctrl)
 saveRDS(nn.tun, file.path("../data/nn.tun.rds"))
 nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, trace=FALSE, size=nn.tun$x$size, decay=nn.tun$x$decay))
+nn.lrn <- makeWeightedClassesWrapper(nn.lrn, wcw.weight=nn/np)
 nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
 nn.lrn <- setPredictType(nn.lrn, predict.type="prob")
 nn.lrn$id <- "Neural Network"
 
 # support vector machine
 svm.lrn <- makeLearner("classif.svm")
+svm.lrn <- makeWeightedClassesWrapper(svm.lrn, wcw.weight=nn/np)
 svm.ps <- makeParamSet(
                         makeDiscreteParam("gamma", values = 2^(-2:2)),
                         makeDiscreteParam("cost", values = 2^(-2:2))
@@ -98,6 +109,7 @@ svm.ps <- makeParamSet(
 svm.tun <- tuneParams(svm.lrn, subsetTask(classif.task, subset=train.set), rdesc, par.set=svm.ps, control=ctrl)
 saveRDS(svm.tun, file.path("../data/svm.tun.rds"))
 svm.lrn <- makeLearner("classif.svm", par.vals = list(cost=svm.tun$x$cost, gamma=svm.tun$x$gamma))
+svm.lrn <- makeWeightedClassesWrapper(svm.lrn, wcw.weight=nn/np)
 svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
 svm.lrn <- setPredictType(svm.lrn, predict.type="prob")
 svm.lrn$id <- "Support Vector Machine"
