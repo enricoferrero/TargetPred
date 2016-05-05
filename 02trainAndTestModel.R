@@ -186,7 +186,7 @@ dev.off()
 parallelStop()
 
 #### model testing
-bst.lrn <- rf.lrn
+bst.lrn <- nn.lrn
 
 ## cross-validation
 parallelStartMulticore(detectCores())
@@ -218,7 +218,7 @@ inf.lrn <- dt.lrn
 ## train model
 inf.mod <- train(inf.lrn, classif.task, subset=train.set)
 saveRDS(inf.mod, file.path("../data/inf.mod.rds"))
-inf.mod <- inf.mod$learner.model
+inf.mod <- getLearnerModel(getLearnerModel(inf.mod))
 
 ## plot tree
 png(file.path("../data/DecisionTree.png"), height=10*300, width=10*300, res=300)
