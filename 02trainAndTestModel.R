@@ -106,7 +106,7 @@ parallelStop()
 
 ## benchmark
 parallelStartMulticore(detectCores(), level="mlr.resample")
-lrns <- list(dt.lrn, rf.lrn, nn.lrn, svm.lrn)
+lrns <- list(rf.lrn, nn.lrn, svm.lrn)
 bmrk <- benchmark(lrns, subsetTask(classif.task, subset=train.set), rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
 xlsx::write.xlsx(getBMRAggrPerformances(bmrk, as.df=TRUE), file.path("../data/Results.xlsx"), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
 parallelStop()
@@ -151,6 +151,7 @@ png(file.path("../data/BenchmarkROC.png"), height=10*150, width=10*150, res=150)
 print(
       ggplot(data=roc$data, aes(x=fpr, y=tpr)) +
           geom_path(aes(colour=learner), size=1.5) +
+          geom_abline(intercept=0, slope=1, linetype="dashed") +
           xlab("False positive rate") +
           ylab("True positive rate") +
           scale_colour_brewer(palette="Set1", name="Classifier") +
