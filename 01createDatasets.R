@@ -1,5 +1,7 @@
 ### libraries ###
 library(biomaRt)
+library(ggplot2)
+library(gridExtra)
 
 ### options ###
 set.seed(16)
@@ -82,3 +84,30 @@ predictionset <- completeset[!completeset$ensembl_gene_id %in% rownames(dataset)
 rownames(predictionset) <- predictionset$ensembl_gene_id
 predictionset$ensembl_gene_id <- NULL
 saveRDS(predictionset, file.path("../data/predicitionset.rds"))
+
+## data visualisation
+# principal components analysis
+pca <- prcomp(dataset[1:5], scale.=TRUE)
+pve <- round(pca$sdev^2/sum(pca$sdev^2) * 100, 1)
+pca <- cbind(pca$x, dataset["target"])
+PC12 <- ggplot(pca, aes(PC1, PC2)) +
+        geom_point(aes(fill=factor(target)), shape=21, size=3, alpha=0.4) +
+        xlab(paste0("PC1 (", pve[1], "% variance)")) +
+        ylab(paste0("PC2 (", pve[2], "% variance)")) +
+        scale_fill_manual(values=c("forestgreen", "darkviolet"), name="Target", breaks=c(0, 1), labels=c("Yes", "Unknown")) +
+        theme_bw(14)
+PC13 <- ggplot(pca, aes(PC1, PC3)) +
+        geom_point(aes(fill=factor(target)), shape=21, size=3, alpha=0.4) +
+        xlab(paste0("PC1 (", pve[1], "% variance)")) +
+        ylab(paste0("PC3 (", pve[3], "% variance)")) +
+        scale_fill_manual(values=c("forestgreen", "darkviolet"), name="Target", breaks=c(0, 1), labels=c("Yes", "Unknown")) +
+        theme_bw(14)
+PC23 <- ggplot(pca, aes(PC2, PC3)) +
+        geom_point(aes(fill=factor(target)), shape=21, size=3, alpha=0.4) +
+        xlab(paste0("PC2 (", pve[2], "% variance)")) +
+        ylab(paste0("PC3 (", pve[3], "% variance)")) +
+        scale_fill_manual(values=c("forestgreen", "darkviolet"), name="Target", breaks=c(0, 1), labels=c("Yes", "Unknown")) +
+        theme_bw(14)
+png("../data/PCA.png", width=18*150, height=5*150, res=150)
+grid.arrange(PC12, PC13, PC23, nrow=1)
+dev.off()
