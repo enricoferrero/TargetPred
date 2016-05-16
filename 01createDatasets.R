@@ -2,6 +2,9 @@
 library(biomaRt)
 library(ggplot2)
 library(gridExtra)
+library(RColorBrewer)
+library(gplots)
+library(Rtsne)
 
 ### options ###
 set.seed(16)
@@ -111,3 +114,26 @@ PC23 <- ggplot(pca, aes(PC2, PC3)) +
 png("../data/PCA.png", width=18*150, height=5*150, res=150)
 grid.arrange(PC12, PC13, PC23, nrow=1)
 dev.off()
+
+# hierarchicald  clustering
+hcfun <- function(x) hclust(x, method="ward.D2")
+hmcols <- colorRampPalette(brewer.pal(9, "YlGnBu"))(255)
+sidecols <- c("forestgreen", "darkviolet")[dataset$target]
+png("../data/Heatmap.png", width=8*150, height=10*150, res=150)
+heatmap.2(as.matrix(dataset[1:5]), hclustfun=hcfun, Rowv=TRUE, Colv=TRUE, dendrogram="both", scale="none", col=hmcols, RowSideColors=sidecols, density.info="none", trace="none", key=TRUE, srtCol=315, adjCol=c(0, 1), labRow="", lhei=c(2,8), margins=c(12,8))
+dev.off()
+
+# t-SNE
+uniqueset <- dataset[!duplicated(dataset[1:5]),]
+tsne <- Rtsne(as.matrix(uniqueset[1:5]))
+tsne <- cbind(tsne$Y, uniqueset[6])
+names(tsne) <- c("D1", "D2", "target")
+png("../data/tSNE.png", width=10*150, height=10*150, res=150)
+print(
+      ggplot(tsne, aes(D1, D2)) +
+          geom_point(aes(fill=factor(target)), shape=21, size=3, alpha=0.4) +
+          scale_fill_manual(values=c("forestgreen", "darkviolet"), name="Target", breaks=c(0, 1), labels=c("Yes", "Unknown")) +
+          theme_bw(14)
+)
+dev.off()
+
