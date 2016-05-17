@@ -28,7 +28,7 @@ completeset <- subset(completeset, Is.direct == "True", c(EnsemblId, OntologyId,
 # remove lower confidence animal_model associations
 completeset$animal_model[completeset$animal_model < 0.4] <- 0
 # aggregate
-completeset <- aggregate(completeset[3:ncol(completeset)], by=list(EnsemblId=completeset$EnsemblId), FUN=mean)
+completeset <- aggregate(completeset[3:ncol(completeset)], by=list(EnsemblId=completeset$EnsemblId), FUN=max)
 # merge
 completeset <- merge(genes, completeset, by=1, all=FALSE)
 saveRDS(completeset, file.path("../data/completeset.rds"))
