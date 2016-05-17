@@ -26,7 +26,7 @@ completeset <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v2.0/m
 # only use direct associations, remove known_drug and literature
 completeset <- subset(completeset, Is.direct == "True", c(EnsemblId, OntologyId, genetic_association, somatic_mutation, rna_expression, affected_pathway, animal_model))
 # remove lower confidence animal_model associations
-completeset$animal_model[completeset$animal_model < 0.75] <- 0
+completeset$animal_model[completeset$animal_model < 0.4] <- 0
 # aggregate
 completeset <- aggregate(completeset[3:ncol(completeset)], by=list(EnsemblId=completeset$EnsemblId), FUN=mean)
 # merge
