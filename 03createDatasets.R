@@ -28,7 +28,7 @@ completeset <- subset(completeset, Is.direct == "True", c(EnsemblId, OntologyId,
 # remove lower confidence animal_model associations
 completeset$animal_model[completeset$animal_model < 0.4] <- 0
 # aggregate
-completeset <- aggregate(completeset[3:ncol(completeset)], by=list(EnsemblId=completeset$EnsemblId), FUN=max)
+completeset <- aggregate(completeset[3:ncol(completeset)], by=list(EnsemblId=completeset$EnsemblId), FUN=mean)
 # merge
 completeset <- merge(genes, completeset, by=1, all=FALSE)
 saveRDS(completeset, file.path("../data/completeset.rds"))
@@ -39,8 +39,7 @@ targetpedia <- subset(targetpedia,
                             PROJECT_STATUS == "Active" |
                             PROJECT_STATUS == "Completed" |
                             PROJECT_STATUS == "Progressing" |
-                            PROJECT_STATUS == "Proposed" |
-                            PROJECT_STATUS == "Under Review-On Hold")
+                            PROJECT_STATUS == "Proposed")
 targetpedia <- getBM(
                 attributes="ensembl_gene_id",
                 filters=c("entrezgene", "chromosome_name", "biotype"),
