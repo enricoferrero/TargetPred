@@ -34,7 +34,7 @@ predres <- subset(predres, Prediction == 1)
 
 # text mining results
 gt <- read.delim("../data/docstore.gene_target.annotated.txt")
-gti <- read.delim("../data/docstore.gene_target_indication.annotated.txt")
+#gti <- read.delim("../data/docstore.gene_target_indication.annotated.txt")
 
 # create sets
 set1 <- genes[genes %in% unique(predres$Ensembl)]
