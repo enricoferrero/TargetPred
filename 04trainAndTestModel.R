@@ -151,7 +151,7 @@ png(file.path("../data/BenchmarkROC.png"), height=10*150, width=10*150, res=150)
 print(
       ggplot(data=roc$data, aes(x=fpr, y=tpr)) +
           geom_path(aes(colour=learner), size=1.5) +
-          geom_abline(intercept=0, slope=1, linetype="dashed") +
+          geom_abline(intercept=0, slope=1, linetype="dashed", colour="darkgrey") +
           xlab("False positive rate") +
           ylab("True positive rate") +
           scale_colour_brewer(palette="Set1", name="Classifier") +
@@ -171,8 +171,6 @@ print(
           theme_bw(base_size=14)
 )
 dev.off()
-
-parallelStop()
 
 #### model testing
 bst.lrn <- rf.lrn
@@ -198,8 +196,6 @@ saveRDS(test.pred, file.path("../data/test.pred.rds"))
 # export
 xlsx::write.xlsx(performance(test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), file.path("../data/Results.xlsx"), sheetName="Test Performance Measures", row.names=TRUE, col.names=FALSE, append=TRUE)
 xlsx::write.xlsx(as.data.frame(getConfMatrix(test.pred)), file.path("../data/Results.xlsx"), sheetName="Test Confusion Matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
-
-parallelStop()
 
 ### inference
 inf.lrn <- dt.lrn
