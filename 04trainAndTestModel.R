@@ -28,16 +28,17 @@ ctrl <- makeTuneControlGrid()
 ## feature selection
 
 # features
-fv <- generateFilterValuesData(classif.task, method=c("variance", "kruskal.test", "chi.squared", "information.gain"))
+fv <- generateFilterValuesData(classif.task, method=c("kruskal.test", "chi.squared", "information.gain"))
 saveRDS(fv, file.path("../data/fv.rds"))
-png(file.path("../data/Features.png"), height=10*150, width=10*150, res=150)
+png(file.path("../data/Features.png"), height=6*150, width=10*150, res=150)
 print(
-    plotFilterValues(fv) +
+    plotFilterValues(fv, sort="none") +
     geom_bar(aes(fill=method), stat="identity", colour="black") +
     ggtitle("") +
     theme_bw(base_size=14) +
     theme(legend.position="none") +
-    theme(axis.text.x = element_text(angle=45, hjust=1))
+    theme(axis.text.x = element_text(angle=45, hjust=1)) +
+    scale_fill_brewer(palette="Set2")
 )
 dev.off()
 
