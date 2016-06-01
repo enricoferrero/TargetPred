@@ -8,7 +8,6 @@ set.seed(16)
 cv.n <- 10
 bag.n <- 100
 
-
 ### model selection
 ## data
 dataset <- readRDS(file.path("../data/dataset.rds"))
@@ -174,7 +173,7 @@ print(
 dev.off()
 
 #### model testing
-bst.lrn <- rf.lrn
+bst.lrn <- nn.lrn
 
 ## cross-validation
 parallelStartMulticore(detectCores())

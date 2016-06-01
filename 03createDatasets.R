@@ -33,19 +33,6 @@ completeset <- aggregate(completeset[3:ncol(completeset)], by=list(EnsemblId=com
 completeset <- merge(genes, completeset, by=1, all=FALSE)
 saveRDS(completeset, file.path("../data/completeset.rds"))
 
-# read targetpedia data for target information
-targetpedia <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/targetpedia/targetpedia_triples.txt")
-targetpedia <- subset(targetpedia,
-                            PROJECT_STATUS == "Active" |
-                            PROJECT_STATUS == "Completed" |
-                            PROJECT_STATUS == "Progressing" |
-                            PROJECT_STATUS == "Proposed")
-targetpedia <- getBM(
-                attributes="ensembl_gene_id",
-                filters=c("entrezgene", "chromosome_name", "biotype"),
-                values=list(targetpedia$Target_EntrezGeneId, chr, type),
-                mart=ensembl)
-
 # read pharmaprojects data for target information
 pharmaprojects <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/pipeline/pipeline_triples.txt")
 pharmaprojects <- subset(pharmaprojects,
@@ -64,7 +51,7 @@ pharmaprojects <- getBM(
                         mart=ensembl)
 
 # positive cases: these are targets according to targetpedia and/or pharmaprojects
-positive <- unique(rbind(targetpedia, pharmaprojects))
+positive <- unique(pharmaprojects)
 positive <- completeset[completeset$ensembl_gene_id %in% positive$ensembl_gene_id, ]
 positive$target <- 1
 
@@ -114,7 +101,7 @@ png("../data/PCA.png", width=18*150, height=5*150, res=150)
 grid.arrange(PC12, PC13, PC23, nrow=1)
 dev.off()
 
-# hierarchicald  clustering
+# hierarchical  clustering
 hcfun <- function(x) hclust(x, method="ward.D2")
 hmcols <- colorRampPalette(brewer.pal(9, "YlGnBu"))(255)
 sidecols <- c("forestgreen", "darkviolet")[dataset$target]
