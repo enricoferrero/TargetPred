@@ -173,7 +173,7 @@ print(
 dev.off()
 
 #### model testing
-bst.lrn <- nn.lrn
+bst.lrn <- rf.lrn
 
 ## cross-validation
 parallelStartMulticore(detectCores())
