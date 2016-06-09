@@ -32,13 +32,17 @@ genes <- unique(genes$ensembl_gene_id)
 predres <- read.csv("../data/PredicitonResults.csv")
 predres <- subset(predres, Prediction == 1)
 
+# training and test sets (to remove from text mining results)
+dataset <- readRDS("../data/dataset.rds")
+dataset <- rownames(dataset)
+
 # text mining results
-gt <- read.delim("../data/docstore.gene_target.annotated.txt")
-#gti <- read.delim("../data/docstore.gene_target_indication.annotated.txt")
+textmining <- read.delim("../data/docstore.gene_target.annotated.txt")
+textmining <- textmining[!textmining$ensembl %in% dataset, ]
 
 # create sets
 set1 <- genes[genes %in% unique(predres$Ensembl)]
-set2 <- genes[genes %in% unique(gt$ensembl)]
+set2 <- genes[genes %in% unique(textmining$ensembl)]
 
 # test for enrichment
 res <- calcEnrichmentFisher(set1, set2, genes)

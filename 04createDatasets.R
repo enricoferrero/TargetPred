@@ -21,7 +21,7 @@ genes <- getBM(
                mart=ensembl)
 genes <- genes[order(genes$ensembl_gene_id), , drop=FALSE]
 
-## create numeric features from cttv
+## create numeric features from open targets
 completeset <- read.csv("/GWD/bioinfo/projects/bix-analysis-stv/data/CTTV/v3.0/public.matrix.csv.gz")
 # only use direct associations, remove known_drug and literature
 completeset <- subset(completeset, Is.direct == TRUE, c(EnsemblId, OntologyId, affected_pathway, animal_model, genetic_association, rna_expression, somatic_mutation))
