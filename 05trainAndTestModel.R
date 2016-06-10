@@ -77,36 +77,49 @@ rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
 rf.lrn$id <- "Random Forest"
 
 # neural network
-nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, trace=FALSE))
+nn.lrn <- makeLearner("classif.nnet", MaxNWts=5000, trace=FALSE)
 nn.ps <- makeParamSet(
                       makeDiscreteParam("size", values = c(2, 3, 5, 7, 10)),
                       makeDiscreteParam("decay", values = c(0.5, 0.25, 0.1, 0))
 )
 nn.tun <- tuneParams(nn.lrn, subsetTask(classif.task, subset=train.set), rdesc, par.set=nn.ps, control=ctrl)
 saveRDS(nn.tun, file.path("../data/nn.tun.rds"))
-nn.lrn <- makeLearner("classif.nnet", par.vals = list(MaxNWts=5000, trace=FALSE, size=nn.tun$x$size, decay=nn.tun$x$decay))
+nn.lrn <- makeLearner("classif.nnet", MaxNWts=5000, trace=FALSE, size=nn.tun$x$size, decay=nn.tun$x$decay)
 nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
 nn.lrn <- setPredictType(nn.lrn, predict.type="prob")
 nn.lrn$id <- "Neural Network"
 
 # support vector machine
-svm.lrn <- makeLearner("classif.svm")
+svm.lrn <- makeLearner("classif.svm", kernel="radial")
 svm.ps <- makeParamSet(
                         makeDiscreteParam("gamma", values = 2^(-2:2)),
                         makeDiscreteParam("cost", values = 2^(-2:2))
 )
 svm.tun <- tuneParams(svm.lrn, subsetTask(classif.task, subset=train.set), rdesc, par.set=svm.ps, control=ctrl)
 saveRDS(svm.tun, file.path("../data/svm.tun.rds"))
-svm.lrn <- makeLearner("classif.svm", par.vals = list(cost=svm.tun$x$cost, gamma=svm.tun$x$gamma))
+svm.lrn <- makeLearner("classif.svm", kernel="radial", cost=svm.tun$x$cost, gamma=svm.tun$x$gamma)
 svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
 svm.lrn <- setPredictType(svm.lrn, predict.type="prob")
 svm.lrn$id <- "Support Vector Machine"
+
+# gradient boosting machine
+gbm.lrn <- makeLearner("classif.gbm", distribution="adaboost")
+gbm.ps <- makeParamSet(
+                      makeDiscreteParam("n.trees", values = c(250, 500, 1000, 2500, 5000)),
+                      makeDiscreteParam("interaction.depth", values = c(2, 3, 4, 5))
+)
+gbm.tun <- tuneParams(gbm.lrn, subsetTask(classif.task, subset=train.set), rdesc, par.set=gbm.ps, control=ctrl)
+saveRDS(gbm.tun, file.path("../data/gbm.tun.rds"))
+gbm.lrn <- makeLearner("classif.gbm", distribution="adaboost", n.trees=gbm.tun$x$n.trees, interaction.depth=gbm.tun$x$interaction.depth)
+gbm.lrn <- makeBaggingWrapper(gbm.lrn, bw.iters=bag.n)
+gbm.lrn <- setPredictType(gbm.lrn, predict.type="prob")
+gbm.lrn$id <- "Gradient Boosting Machine"
 
 parallelStop()
 
 ## benchmark
 parallelStartMulticore(detectCores(), level="mlr.resample")
-lrns <- list(rf.lrn, nn.lrn, svm.lrn)
+lrns <- list(rf.lrn, nn.lrn, svm.lrn, gbm.lrn)
 bmrk <- benchmark(lrns, subsetTask(classif.task, subset=train.set), rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
 xlsx::write.xlsx(getBMRAggrPerformances(bmrk, as.df=TRUE), file.path("../data/Results.xlsx"), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
 parallelStop()
