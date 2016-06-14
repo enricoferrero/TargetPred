@@ -50,6 +50,6 @@ res$p.value
 res$estimate
 
 # Venn diagram
-png(file.path("../data/Venn.png"), height=10*150, width=10*150, res=150)
+png(file.path("../data/Venn.png"), height=10*300, width=10*300, res=300)
 plot(Venn(list("Predictions"=set1, "Text mining"=set2)))
 dev.off()

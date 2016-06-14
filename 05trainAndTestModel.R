@@ -24,12 +24,18 @@ rdesc <- makeResampleDesc("CV", iters=cv.n)
 ## tuning control
 ctrl <- makeTuneControlGrid()
 
-## feature selection
+## number of features and observations
+nf <- getTaskNFeats(classif.task)
+no <- getTaskSize(classif.task)
 
-# features
-fv <- generateFilterValuesData(classif.task, method=c("kruskal.test", "chi.squared", "information.gain"))
+# training and test set
+train.set <- sample(no, size = round(0.8*no))
+test.set <- setdiff(seq(no), train.set)
+
+## features
+fv <- generateFilterValuesData(subsetTask(classif.task, subset=train.set), method=c("kruskal.test", "chi.squared", "information.gain"))
 saveRDS(fv, file.path("../data/fv.rds"))
-png(file.path("../data/Features.png"), height=6*150, width=10*150, res=150)
+png(file.path("../data/Features.png"), height=6*300, width=10*300, res=300)
 print(
     plotFilterValues(fv, sort="none") +
     geom_bar(aes(fill=method), stat="identity", colour="black") +
@@ -40,15 +46,6 @@ print(
     scale_fill_brewer(palette="Set2")
 )
 dev.off()
-
-# number of features
-nf <- getTaskNFeats(classif.task)
-# number of observations
-no <- getTaskSize(classif.task)
-
-## training and test set
-train.set <- sample(no, size = round(0.8*no))
-test.set <- setdiff(seq(no), train.set)
 
 ## tuning
 parallelStartMulticore(detectCores())
@@ -127,7 +124,7 @@ parallelStop()
 # boxplots of mean misclassification error
 perf <- getBMRPerformances(bmrk, as.df=TRUE)
 perf <- perf[c("learner.id", "mmce")]
-png(file.path("../data/BenchmarkMmceBoxplots.png"), height=10*150, width=10*150, res=150)
+png(file.path("../data/BenchmarkMmceBoxplots.png"), height=10*300, width=10*300, res=300)
 print(
       ggplot(data=perf, aes(x=learner.id, y=mmce)) +
           geom_boxplot(aes(fill=learner.id)) +
@@ -144,7 +141,7 @@ dev.off()
 perf <- getBMRPerformances(bmrk, as.df=TRUE)
 names(perf)[5:ncol(perf)] <- c("Accuracy", "AUC", "Recall/Sensitivity", "Specificity", "Precision", "F1")
 perf <- reshape(perf, varying=names(perf)[5:ncol(perf)], v.names="value", timevar="measure", times=names(perf)[5:ncol(perf)], direction="long")
-png(file.path("../data/BenchmarkOtherBoxplots.png"), height=10*150, width=10*150, res=150)
+png(file.path("../data/BenchmarkOtherBoxplots.png"), height=10*300, width=10*300, res=300)
 print(
       ggplot(data=perf, aes(x=learner.id, y=value)) +
           geom_boxplot(aes(fill=learner.id)) +
@@ -160,7 +157,7 @@ dev.off()
 
 # ROC curves
 roc <- generateThreshVsPerfData(bmrk, measures=list(fpr, tpr))
-png(file.path("../data/BenchmarkROC.png"), height=10*150, width=10*150, res=150)
+png(file.path("../data/BenchmarkROC.png"), height=10*300, width=10*300, res=300)
 print(
       ggplot(data=roc$data, aes(x=fpr, y=tpr)) +
           geom_path(aes(colour=learner), size=1.5) +
@@ -174,7 +171,7 @@ dev.off()
 
 # PR curves
 pr <- generateThreshVsPerfData(bmrk, measures=list(tpr, ppv))
-png(file.path("../data/BenchmarkPR.png"), height=10*150, width=10*150, res=150)
+png(file.path("../data/BenchmarkPR.png"), height=10*300, width=10*300, res=300)
 print(
       ggplot(data=pr$data, aes(x=tpr, y=ppv)) +
           geom_path(aes(colour=learner), size=1.5) +
