@@ -4,7 +4,7 @@ library(parallel)
 library(parallelMap)
 
 ### options ###
-set.seed(16)
+set.seed(986, kind="L'Ecuyer-CMRG")
 cv.n <- 10
 bag.n <- 100
 
@@ -33,7 +33,7 @@ train.set <- sample(no, size = round(0.8*no))
 test.set <- setdiff(seq(no), train.set)
 
 ## features
-fv <- generateFilterValuesData(subsetTask(classif.task, subset=train.set), method=c("kruskal.test", "chi.squared", "information.gain"))
+fv <- generateFilterValuesData(classif.task, method=c("kruskal.test", "chi.squared", "information.gain"))
 saveRDS(fv, file.path("../data/fv.rds"))
 png(file.path("../data/Features.png"), height=6*300, width=10*300, res=300)
 print(

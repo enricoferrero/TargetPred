@@ -7,7 +7,7 @@ library(gplots)
 library(Rtsne)
 
 ### options ###
-set.seed(16)
+set.seed(986)
 ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
 chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
@@ -97,7 +97,10 @@ PC23 <- ggplot(pca, aes(PC2, PC3)) +
         ylab(paste0("PC3 (", pve[3], "% variance)")) +
         scale_fill_manual(values=c("forestgreen", "darkviolet"), name="Target", breaks=c(0, 1), labels=c("Yes", "Unknown")) +
         theme_bw(14)
-png("../data/PCA.png", width=6*300, height=15*300, res=300)
+png("../data/PCAh.png", width=18*300, height=5*300, res=300)
+grid.arrange(PC12, PC13, PC23, nrow=1)
+dev.off()
+png("../data/PCAv.png", width=6*300, height=15*300, res=300)
 grid.arrange(PC12, PC13, PC23, ncol=1)
 dev.off()
 

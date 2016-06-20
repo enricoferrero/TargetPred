@@ -5,7 +5,7 @@ library(parallelMap)
 library(biomaRt)
 
 ### options ###
-set.seed(16)
+set.seed(986, kind="L'Ecuyer-CMRG")
 parallelStartMulticore(detectCores())
 ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
 chr <- c(1:22, "X", "Y", "MT")
