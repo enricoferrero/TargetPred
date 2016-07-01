@@ -177,6 +177,8 @@ print(
           geom_path(aes(colour=learner), size=1.5) +
           xlab("Recall") +
           ylab("Precision") +
+          xlim(0, 1) + 
+          ylim(0, 1) +
           scale_colour_brewer(palette="Set1", name="Classifier") +
           theme_bw(base_size=14)
 )
