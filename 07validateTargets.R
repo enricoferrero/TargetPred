@@ -56,7 +56,7 @@ plot(Venn(list("Predictions"=set1, "Text mining"=set2)))
 dev.off()
 
 # permutation test
-n <- 1000
+n <- 10000
 perm <- data.frame(pvalue=rep(1, n), oddsratio=rep(1, n))
 for (i in 1:n) {
     set1 <- sample(genes, length(set1))
