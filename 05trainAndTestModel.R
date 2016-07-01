@@ -185,20 +185,17 @@ print(
 dev.off()
 
 #### model testing
-bst.lrn <- rf.lrn
 
 ## cross-validation
-parallelStartMulticore(detectCores())
-res <- resample(bst.lrn, subsetTask(classif.task, subset=train.set), rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
+res <- bmrk$results$TargetPred$`Random Forest`
 saveRDS(res, file.path("../data/res.rds"))
-parallelStop()
 
 # export
 xlsx::write.xlsx(res$aggr, file.path("../data/Results.xlsx"), sheetName="CV Performance Measures", row.names=TRUE, col.names=FALSE, append=TRUE)
 xlsx::write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path("../data/Results.xlsx"), sheetName="CV Confusion Matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
 
 ## train model
-mod <- train(bst.lrn, classif.task, subset=train.set)
+mod <- train(rf.lrn, classif.task, subset=train.set)
 saveRDS(mod, file.path("../data/mod.rds"))
 
 ## evaluate performance on test set
@@ -209,11 +206,8 @@ saveRDS(test.pred, file.path("../data/test.pred.rds"))
 xlsx::write.xlsx(performance(test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), file.path("../data/Results.xlsx"), sheetName="Test Performance Measures", row.names=TRUE, col.names=FALSE, append=TRUE)
 xlsx::write.xlsx(as.data.frame(getConfMatrix(test.pred)), file.path("../data/Results.xlsx"), sheetName="Test Confusion Matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
 
-### inference
-inf.lrn <- dt.lrn
-
 ## train model
-inf.mod <- train(inf.lrn, classif.task, subset=train.set)
+inf.mod <- train(dt.lrn, classif.task, subset=train.set)
 saveRDS(inf.mod, file.path("../data/inf.mod.rds"))
 inf.mod <- inf.mod$learner.model
 
