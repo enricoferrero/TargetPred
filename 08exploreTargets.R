@@ -69,7 +69,7 @@ dataset <- do.call(rbind, dataset)
 dataset <- unique(dataset[c("ensembl", "Stage", "response")])
 
 # labels for plot
-levels(dataset$response) <- c("Unknown", "Target")
+levels(dataset$response) <- c("Non-target", "Target")
 
 # plot
 png(file.path("../data/TargetStage.png"), height=6*300, width=8*300, res=300)
