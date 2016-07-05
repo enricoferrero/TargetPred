@@ -59,7 +59,7 @@ dt.tun <- tuneParams(dt.lrn, subsetTask(classif.task, subset=train.set), rdesc, 
 saveRDS(dt.tun, file.path("../data/dt.tun.rds"))
 dt.lrn <- makeLearner("classif.rpart", par.vals = list(cp=dt.tun$x$cp))
 dt.lrn <- setPredictType(dt.lrn, predict.type="prob")
-dt.lrn$id <- "Decision Tree"
+setId(dt.lrn, "Decision Tree")
 
 # random forest
 rf.lrn <- makeLearner("classif.randomForest")
@@ -71,7 +71,7 @@ rf.tun <- tuneParams(rf.lrn, subsetTask(classif.task, subset=train.set), rdesc, 
 saveRDS(rf.tun, file.path("../data/rf.tun.rds"))
 rf.lrn <- makeLearner("classif.randomForest", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
 rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
-rf.lrn$id <- "Random Forest"
+setId(rf.lrn, "Random Forest")
 
 # neural network
 nn.lrn <- makeLearner("classif.nnet", MaxNWts=5000, trace=FALSE)
@@ -84,7 +84,7 @@ saveRDS(nn.tun, file.path("../data/nn.tun.rds"))
 nn.lrn <- makeLearner("classif.nnet", MaxNWts=5000, trace=FALSE, size=nn.tun$x$size, decay=nn.tun$x$decay)
 nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
 nn.lrn <- setPredictType(nn.lrn, predict.type="prob")
-nn.lrn$id <- "Neural Network"
+setId(nn.lrn, "Neural Network")
 
 # support vector machine
 svm.lrn <- makeLearner("classif.svm", kernel="radial")
@@ -97,7 +97,7 @@ saveRDS(svm.tun, file.path("../data/svm.tun.rds"))
 svm.lrn <- makeLearner("classif.svm", kernel="radial", cost=svm.tun$x$cost, gamma=svm.tun$x$gamma)
 svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
 svm.lrn <- setPredictType(svm.lrn, predict.type="prob")
-svm.lrn$id <- "Support Vector Machine"
+setId(svm.lrn, "Support Vector Machine")
 
 # gradient boosting machine
 gbm.lrn <- makeLearner("classif.gbm", distribution="adaboost")
@@ -110,7 +110,7 @@ saveRDS(gbm.tun, file.path("../data/gbm.tun.rds"))
 gbm.lrn <- makeLearner("classif.gbm", distribution="adaboost", n.trees=gbm.tun$x$n.trees, interaction.depth=gbm.tun$x$interaction.depth)
 gbm.lrn <- makeBaggingWrapper(gbm.lrn, bw.iters=bag.n)
 gbm.lrn <- setPredictType(gbm.lrn, predict.type="prob")
-gbm.lrn$id <- "Gradient Boosting Machine"
+setId(gbm.lrn, "Gradient Boosting Machine")
 
 parallelStop()
 
@@ -211,7 +211,7 @@ inf.mod <- train(dt.lrn, classif.task, subset=train.set)
 saveRDS(inf.mod, file.path("../data/inf.mod.rds"))
 inf.mod <- inf.mod$learner.model
 
-## plot tree
+# plot tree
 png(file.path("../data/DecisionTree.png"), height=10*300, width=10*300, res=300)
-rpart.plot::prp(inf.mod, type=2, extra=101, varlen=0, box.col=c("lightblue", "lightgreen")[inf.mod$frame$yval])
+rpart.plot::prp(inf.mod, type=2, extra=101, varlen=0, box.col=c(adjustcolor("darkviolet", alpha.f=0.4), adjustcolor("forestgreen", alpha.f=0.4))[inf.mod$frame$yval])
 dev.off()
