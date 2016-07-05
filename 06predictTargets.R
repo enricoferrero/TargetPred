@@ -17,6 +17,7 @@ mod <- readRDS(file.path("../data/mod.rds"))
 
 ### predict ###
 pred <- predict(mod, newdata=predictionset)
+pred <- setThreshold(pred, 0.75)
 saveRDS(pred, file.path("../data/pred.rds"))
 
 ### annotate ###
