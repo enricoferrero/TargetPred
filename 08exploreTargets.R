@@ -1,6 +1,12 @@
 library(mlr)
+library(biomaRt)
 library(ggplot2)
 set.seed(986, kind="L'Ecuyer-CMRG")
+
+# load data
+classif.task <- readRDS("../data/classif.task.rds")
+res <- readRDS("../data/res.rds")
+test.pred <- readRDS("../data/test.pred.rds")
 
 ## number of features and observations
 nf <- getTaskNFeats(classif.task)
@@ -9,11 +15,6 @@ no <- getTaskSize(classif.task)
 # training and test set
 train.set <- sample(no, size = round(0.8*no))
 test.set <- setdiff(seq(no), train.set)
-
-# load data
-classif.task <- readRDS("../data/classif.task.rds")
-res <- readRDS("../data/res.rds")
-test.pred <- readRDS("../data/test.pred.rds")
 
 # annotate dataset
 dataset <- getTaskData(classif.task)
@@ -84,3 +85,7 @@ print(
           scale_fill_manual(values=c("darkviolet", "forestgreen"))
 )
 dev.off()
+
+# Logistic regression: are differences significatives?
+logit <- summary(glm(response ~ Stage -1, data=dataset, family="binomial"))
+print(logit)
