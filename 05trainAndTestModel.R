@@ -59,7 +59,7 @@ dt.tun <- tuneParams(dt.lrn, subsetTask(classif.task, subset=train.set), rdesc, 
 saveRDS(dt.tun, file.path("../data/dt.tun.rds"))
 dt.lrn <- makeLearner("classif.rpart", par.vals = list(cp=dt.tun$x$cp))
 dt.lrn <- setPredictType(dt.lrn, predict.type="prob")
-setId(dt.lrn, "Decision Tree")
+dt.lrn <- setId(dt.lrn, "Decision Tree")
 
 # random forest
 rf.lrn <- makeLearner("classif.randomForest")
@@ -71,7 +71,7 @@ rf.tun <- tuneParams(rf.lrn, subsetTask(classif.task, subset=train.set), rdesc, 
 saveRDS(rf.tun, file.path("../data/rf.tun.rds"))
 rf.lrn <- makeLearner("classif.randomForest", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
 rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
-setId(rf.lrn, "Random Forest")
+rf.lrn <- setId(rf.lrn, "Random Forest")
 
 # neural network
 nn.lrn <- makeLearner("classif.nnet", MaxNWts=5000, trace=FALSE)
@@ -84,7 +84,7 @@ saveRDS(nn.tun, file.path("../data/nn.tun.rds"))
 nn.lrn <- makeLearner("classif.nnet", MaxNWts=5000, trace=FALSE, size=nn.tun$x$size, decay=nn.tun$x$decay)
 nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
 nn.lrn <- setPredictType(nn.lrn, predict.type="prob")
-setId(nn.lrn, "Neural Network")
+nn.lrn <- setId(nn.lrn, "Neural Network")
 
 # support vector machine
 svm.lrn <- makeLearner("classif.svm", kernel="radial")
@@ -97,7 +97,7 @@ saveRDS(svm.tun, file.path("../data/svm.tun.rds"))
 svm.lrn <- makeLearner("classif.svm", kernel="radial", cost=svm.tun$x$cost, gamma=svm.tun$x$gamma)
 svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
 svm.lrn <- setPredictType(svm.lrn, predict.type="prob")
-setId(svm.lrn, "Support Vector Machine")
+svm.lrn <- setId(svm.lrn, "Support Vector Machine")
 
 # gradient boosting machine
 gbm.lrn <- makeLearner("classif.gbm", distribution="adaboost")
@@ -110,7 +110,7 @@ saveRDS(gbm.tun, file.path("../data/gbm.tun.rds"))
 gbm.lrn <- makeLearner("classif.gbm", distribution="adaboost", n.trees=gbm.tun$x$n.trees, interaction.depth=gbm.tun$x$interaction.depth)
 gbm.lrn <- makeBaggingWrapper(gbm.lrn, bw.iters=bag.n)
 gbm.lrn <- setPredictType(gbm.lrn, predict.type="prob")
-setId(gbm.lrn, "Gradient Boosting Machine")
+gbm.lrn <- setId(gbm.lrn, "Gradient Boosting Machine")
 
 parallelStop()
 
@@ -187,7 +187,7 @@ dev.off()
 #### model testing
 
 ## cross-validation
-res <- bmrk$results$TargetPred$`Random Forest`
+res <- bmrk$results$TargetPred$classif.randomForest
 saveRDS(res, file.path("../data/res.rds"))
 
 # export
