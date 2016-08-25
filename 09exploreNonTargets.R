@@ -60,7 +60,6 @@ pharmaprojects <- subset(pharmaprojects,
                                 GlobalStatus == "Pre-registration" |
                                 GlobalStatus == "Preclinical" |
                                 GlobalStatus == "Registered"|
-                                GlobalStatus == "Suspended" |
                                 GlobalStatus == "Discontinued" |
                                 GlobalStatus == "Withdrawn")
 pharmaprojects.id <- getBM(
@@ -75,7 +74,7 @@ pharmaprojects <- unique(pharmaprojects[c("ensembl_gene_id", "GlobalStatus")])
 dataset <- merge(dataset, pharmaprojects, by.x="ensembl", by.y="ensembl_gene_id", all=FALSE)
 
 # only consider latest stage
-dataset$GlobalStatus <- factor(dataset$GlobalStatus, levels=c("Suspended", "Discontinued", "Withdrawn", "Preclinical", "Clinical Trial", "Phase I Clinical Trial", "Phase II Clinical Trial", "Phase III Clinical Trial", "Pre-registration", "Registered", "Launched"), ordered=TRUE)
+dataset$GlobalStatus <- factor(dataset$GlobalStatus, levels=c("Discontinued", "Withdrawn", "Preclinical", "Clinical Trial", "Phase I Clinical Trial", "Phase II Clinical Trial", "Phase III Clinical Trial", "Pre-registration", "Registered", "Launched"), ordered=TRUE)
 dataset <- split(dataset, dataset$ensembl)
 dataset <- lapply(dataset, transform, Stage=max(GlobalStatus))
 dataset <- do.call(rbind, dataset)
@@ -83,7 +82,6 @@ dataset <- unique(dataset[c("ensembl", "Stage", "response")])
 
 # only keep failed targets
 dataset <- subset(dataset,
-                        Stage == "Suspended" |
                         Stage == "Discontinued" |
                         Stage == "Withdrawn")
 dataset <- droplevels(dataset)
