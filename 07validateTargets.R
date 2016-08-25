@@ -4,6 +4,7 @@ library(Vennerable)
 library(ggplot2)
 
 ### options ###
+set.seed(986)
 ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
 chr <- c(1:22, "X", "Y", "MT")
 
@@ -61,7 +62,7 @@ perm <- data.frame(pvalue=rep(1, n), oddsratio=rep(1, n))
 for (i in 1:n) {
     set1 <- sample(genes, length(set1))
     res <- calcEnrichmentFisher(set1, set2, genes)
-    perm$pvalue[i] <- res$p.value
+    perm$pvalue[i] <- -log10(res$p.value)
     perm$oddsratio[i] <- res$estimate
 }
 
@@ -70,9 +71,8 @@ png("../data/HistogramPV.png", height=6*300, width=6*300, res=300)
 print(
 	  ggplot(perm, aes(pvalue)) +
 		  geom_histogram(colour="black", fill="lightskyblue", bins=100) +
-		  xlab("Log p-value") + 
+		  xlab("-Log10 p-value") + 
 		  ylab("Count") +
-		  scale_x_log10() +
           theme_bw(14)
 )
 dev.off()

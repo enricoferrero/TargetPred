@@ -7,6 +7,7 @@ set.seed(986)
 classif.task <- readRDS("../data/classif.task.rds")
 res <- readRDS("../data/res.rds")
 test.pred <- readRDS("../data/test.pred.rds")
+pred <- readRDS("../data/pred.rds")
 
 ## number of features and observations
 nf <- getTaskNFeats(classif.task)
@@ -35,7 +36,15 @@ test.pred$id <- test.set
 dataset.train <- merge(dataset, res, all=FALSE)
 dataset.test <- merge(dataset, test.pred, all=FALSE)
 dataset <- merge(dataset.train, dataset.test, all=TRUE)
-dataset <- subset(dataset, truth == 1, c(ensembl, response))
+dataset <- subset(dataset, truth == 0, c(ensembl, response))
+
+# format pred results
+pred <- pred$data
+pred$ensembl <- rownames(pred)
+pred <- pred[c("ensembl", "response")]
+
+# add pred data
+dataset <- rbind(dataset, pred)
 
 # get and process pharmaprojects data
 ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
@@ -50,7 +59,10 @@ pharmaprojects <- subset(pharmaprojects,
                                 GlobalStatus == "Phase III Clinical Trial" |
                                 GlobalStatus == "Pre-registration" |
                                 GlobalStatus == "Preclinical" |
-                                GlobalStatus == "Registered")
+                                GlobalStatus == "Registered"|
+                                GlobalStatus == "Suspended" |
+                                GlobalStatus == "Discontinued" |
+                                GlobalStatus == "Withdrawn")
 pharmaprojects.id <- getBM(
                            attributes=c("ensembl_gene_id", "entrezgene"),
                            filters=c("entrezgene", "chromosome_name", "biotype"),
@@ -63,17 +75,24 @@ pharmaprojects <- unique(pharmaprojects[c("ensembl_gene_id", "GlobalStatus")])
 dataset <- merge(dataset, pharmaprojects, by.x="ensembl", by.y="ensembl_gene_id", all=FALSE)
 
 # only consider latest stage
-dataset$GlobalStatus <- factor(dataset$GlobalStatus, levels=c("Preclinical", "Clinical Trial", "Phase I Clinical Trial", "Phase II Clinical Trial", "Phase III Clinical Trial", "Pre-registration", "Registered", "Launched"), ordered=TRUE)
+dataset$GlobalStatus <- factor(dataset$GlobalStatus, levels=c("Suspended", "Discontinued", "Withdrawn", "Preclinical", "Clinical Trial", "Phase I Clinical Trial", "Phase II Clinical Trial", "Phase III Clinical Trial", "Pre-registration", "Registered", "Launched"), ordered=TRUE)
 dataset <- split(dataset, dataset$ensembl)
 dataset <- lapply(dataset, transform, Stage=max(GlobalStatus))
 dataset <- do.call(rbind, dataset)
 dataset <- unique(dataset[c("ensembl", "Stage", "response")])
 
+# only keep failed targets
+dataset <- subset(dataset,
+                        Stage == "Suspended" |
+                        Stage == "Discontinued" |
+                        Stage == "Withdrawn")
+dataset <- droplevels(dataset)
+
 # labels for plot
 levels(dataset$response) <- c("Non-target", "Target")
 
 # plot
-png(file.path("../data/TargetStage.png"), height=6*300, width=8*300, res=300)
+png(file.path("../data/NonTargetStage.png"), height=6*300, width=8*300, res=300)
 print(
       ggplot(dataset, aes(Stage)) +
           geom_bar(aes(fill=response), colour="black") +
