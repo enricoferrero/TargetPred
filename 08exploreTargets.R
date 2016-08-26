@@ -1,7 +1,7 @@
 library(mlr)
 library(biomaRt)
 library(ggplot2)
-set.seed(986)
+set.seed(986, kind="L'Ecuyer-CMRG")
 
 # load data
 classif.task <- readRDS("../data/classif.task.rds")
@@ -87,5 +87,5 @@ print(
 dev.off()
 
 # Logistic regression: are differences significatives?
-logit <- summary(glm(response ~ Stage -1, data=dataset, family="binomial"))
+logit <- summary(glm(response ~ Stage - 1, data=dataset, family="binomial"))
 print(logit)

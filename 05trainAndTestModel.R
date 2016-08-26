@@ -187,7 +187,7 @@ dev.off()
 #### model testing
 
 ## cross-validation
-res <- bmrk$results$TargetPred$classif.randomForest
+res <- bmrk$results$TargetPred$`Random Forest`
 saveRDS(res, file.path("../data/res.rds"))
 
 # export
