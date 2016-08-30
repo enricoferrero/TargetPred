@@ -7,8 +7,8 @@ library(gplots)
 library(Rtsne)
 
 ### options ###
-set.seed(986, kind="L'Ecuyer-CMRG")
-ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
+set.seed(986)
+ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="jul2016.archive.ensembl.org")
 chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
 
@@ -34,7 +34,7 @@ completeset <- merge(genes, completeset, by=1, all=FALSE)
 saveRDS(completeset, file.path("../data/completeset.rds"))
 
 # read pharmaprojects data for target information
-pharmaprojects <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/pipeline/pipeline_triples.txt")
+pharmaprojects <- read.delim("../data/pipeline_triples.txt")
 pharmaprojects <- subset(pharmaprojects,
                                 GlobalStatus == "Clinical Trial" |
                                 GlobalStatus == "Launched" |

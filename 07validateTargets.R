@@ -4,8 +4,8 @@ library(Vennerable)
 library(ggplot2)
 
 ### options ###
-set.seed(986, kind="L'Ecuyer-CMRG")
-ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
+set.seed(986)
+ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="jul2016.archive.ensembl.org")
 chr <- c(1:22, "X", "Y", "MT")
 
 ### functions ###
@@ -39,7 +39,7 @@ dataset <- readRDS("../data/dataset.rds")
 dataset <- rownames(dataset)
 
 # text mining results
-textmining <- read.delim("../data/docstore.gene_target.annotated.txt")
+textmining <- read.csv("../data/docstore.gene_target.annotated.csv")
 textmining <- textmining[!textmining$ensembl %in% dataset, ]
 
 # create sets

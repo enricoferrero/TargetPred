@@ -7,12 +7,12 @@ library(biomaRt)
 ### options ###
 set.seed(986, kind="L'Ecuyer-CMRG")
 parallelStartMulticore(detectCores())
-ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
+ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="jul2016.archive.ensembl.org")
 chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
 
 ### data ###
-predictionset <- readRDS(file.path("../data/predicitionset.rds"))
+predictionset <- readRDS(file.path("../data/predictionset.rds"))
 mod <- readRDS(file.path("../data/mod.rds"))
 
 ### predict ###

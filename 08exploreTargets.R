@@ -38,10 +38,10 @@ dataset <- merge(dataset.train, dataset.test, all=TRUE)
 dataset <- subset(dataset, truth == 1, c(ensembl, response))
 
 # get and process pharmaprojects data
-ensembl <- useMart("ensembl", "hsapiens_gene_ensembl")
+ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="jul2016.archive.ensembl.org")
 chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
-pharmaprojects <- read.delim("/GWD/bioinfo/projects/bix-analysis-stv/data/pharmaceutical/pipeline/pipeline_triples.txt")
+pharmaprojects <- read.delim("../data/pipeline_triples.txt")
 pharmaprojects <- subset(pharmaprojects,
                                 GlobalStatus == "Clinical Trial" |
                                 GlobalStatus == "Launched" |
