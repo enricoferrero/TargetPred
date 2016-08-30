@@ -14,4 +14,4 @@ gtres <- merge(gtres, genes, by.x="symbol", by.y="external_gene_name", all.x=TRU
 gtres <- gtres[c("ensembl_gene_id", "symbol", "docId")]
 names(gtres) <- c("ensembl", "symbol", "pubmed")
 gtres <- unique(na.omit(gtres))
-write.table(gtres, "../data/docstore.gene_target.annotated.txt", sep="\t", quote=FALSE, row.names=FALSE, col.names=TRUE)
+write.csv(gtres, "../data/docstore.gene_target.annotated.csv", quote=FALSE, row.names=FALSE)

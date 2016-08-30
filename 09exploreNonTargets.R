@@ -38,12 +38,12 @@ dataset.test <- merge(dataset, test.pred, all=FALSE)
 dataset <- merge(dataset.train, dataset.test, all=TRUE)
 dataset <- subset(dataset, truth == 0, c(ensembl, response))
 
-# format pred results
+## format pred results
 pred <- pred$data
 pred$ensembl <- rownames(pred)
 pred <- pred[c("ensembl", "response")]
 
-# add pred data
+## add pred data
 dataset <- rbind(dataset, pred)
 
 # get and process pharmaprojects data
@@ -87,7 +87,7 @@ dataset <- subset(dataset,
 dataset <- droplevels(dataset)
 
 # labels for plot
-levels(dataset$response) <- c("Non-target", "Target")
+levels(dataset$response) <- c("Predicted non-target", "Predicted target")
 
 # plot
 png(file.path("../data/NonTargetStage.png"), height=6*300, width=8*300, res=300)
@@ -95,7 +95,7 @@ print(
       ggplot(dataset, aes(Stage)) +
           geom_bar(aes(fill=response), colour="black") +
           facet_wrap(~ response, ncol=2) +
-          ylab("Number of targets") +
+          ylab("Number of non-targets") +
           theme_bw(base_size=14) +
           theme(axis.text.x = element_text(angle=45, hjust=1)) +
           theme(legend.position="none") +
