@@ -1,6 +1,6 @@
 options(stringsAsFactors=FALSE)
 library(biomaRt)
-ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="jul2016.archive.ensembl.org")
+ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="mar2016.archive.ensembl.org")
 
 ## gene_target
 gtres <- read.delim("../data/docstore.gene_target.results.txt")

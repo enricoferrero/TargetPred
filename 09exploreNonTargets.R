@@ -47,7 +47,7 @@ pred <- pred[c("ensembl", "response")]
 dataset <- rbind(dataset, pred)
 
 # get and process pharmaprojects data
-ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="jul2016.archive.ensembl.org")
+ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="mar2016.archive.ensembl.org")
 chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
 pharmaprojects <- read.delim("../data/pipeline_triples.txt")

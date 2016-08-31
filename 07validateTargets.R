@@ -4,8 +4,8 @@ library(Vennerable)
 library(ggplot2)
 
 ### options ###
-set.seed(986)
-ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="jul2016.archive.ensembl.org")
+set.seed(986, kind="L'Ecuyer-CMRG")
+ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="mar2016.archive.ensembl.org")
 chr <- c(1:22, "X", "Y", "MT")
 
 ### functions ###
