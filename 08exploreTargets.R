@@ -76,12 +76,13 @@ levels(dataset$response) <- c("Predicted non-target", "Predicted target")
 png(file.path("../data/TargetStage.png"), height=6*300, width=8*300, res=300)
 print(
       ggplot(dataset, aes(Stage)) +
-          geom_bar(aes(fill=response), colour="black") +
-          facet_wrap(~ response, ncol=2) +
+          geom_bar(aes(fill=response), position=position_dodge(), colour="black") +
+          #facet_wrap(~ response, ncol=2) +
           ylab("Number of targets") +
           theme_bw(base_size=14) +
           theme(axis.text.x = element_text(angle=45, hjust=1)) +
-          theme(legend.position="none") +
+          #theme(legend.position="none") +
+          theme(legend.title=element_blank()) +
           scale_fill_manual(values=c("darkviolet", "forestgreen"))
 )
 dev.off()

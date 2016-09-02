@@ -60,6 +60,7 @@ pharmaprojects <- subset(pharmaprojects,
                                 GlobalStatus == "Pre-registration" |
                                 GlobalStatus == "Preclinical" |
                                 GlobalStatus == "Registered"|
+                                GlobalStatus == "Suspended" |
                                 GlobalStatus == "Discontinued" |
                                 GlobalStatus == "Withdrawn")
 pharmaprojects.id <- getBM(
@@ -74,7 +75,7 @@ pharmaprojects <- unique(pharmaprojects[c("ensembl_gene_id", "GlobalStatus")])
 dataset <- merge(dataset, pharmaprojects, by.x="ensembl", by.y="ensembl_gene_id", all=FALSE)
 
 # only consider latest stage
-dataset$GlobalStatus <- factor(dataset$GlobalStatus, levels=c("Discontinued", "Withdrawn", "Preclinical", "Clinical Trial", "Phase I Clinical Trial", "Phase II Clinical Trial", "Phase III Clinical Trial", "Pre-registration", "Registered", "Launched"), ordered=TRUE)
+dataset$GlobalStatus <- factor(dataset$GlobalStatus, levels=c("Suspended", "Discontinued", "Withdrawn", "Preclinical", "Clinical Trial", "Phase I Clinical Trial", "Phase II Clinical Trial", "Phase III Clinical Trial", "Pre-registration", "Registered", "Launched"), ordered=TRUE)
 dataset <- split(dataset, dataset$ensembl)
 dataset <- lapply(dataset, transform, Stage=max(GlobalStatus))
 dataset <- do.call(rbind, dataset)
@@ -82,6 +83,7 @@ dataset <- unique(dataset[c("ensembl", "Stage", "response")])
 
 # only keep failed targets
 dataset <- subset(dataset,
+                        Stage == "Suspended" |
                         Stage == "Discontinued" |
                         Stage == "Withdrawn")
 dataset <- droplevels(dataset)
@@ -93,12 +95,13 @@ levels(dataset$response) <- c("Predicted non-target", "Predicted target")
 png(file.path("../data/NonTargetStage.png"), height=6*300, width=8*300, res=300)
 print(
       ggplot(dataset, aes(Stage)) +
-          geom_bar(aes(fill=response), colour="black") +
-          facet_wrap(~ response, ncol=2) +
+          geom_bar(aes(fill=response), position=position_dodge(), colour="black") +
+          #facet_wrap(~ response, ncol=2) +
           ylab("Number of non-targets") +
           theme_bw(base_size=14) +
           theme(axis.text.x = element_text(angle=45, hjust=1)) +
-          theme(legend.position="none") +
+          #theme(legend.position="none") +
+          theme(legend.title=element_blank()) +
           scale_fill_manual(values=c("darkviolet", "forestgreen"))
 )
 dev.off()
