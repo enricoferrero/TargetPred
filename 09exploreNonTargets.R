@@ -23,11 +23,14 @@ dataset$id <- 1:nrow(dataset)
 dataset$ensembl <- rownames(dataset)
 
 # annotate resampling results
-res <- res$pred$data
+res <- res$pred
+res <- setThreshold(res, 0.75)
+res <- res$data
 res <- res[order(res$id), ]
 res$id <- train.set
 
 # annotate test results
+test.pred <- setThreshold(test.pred, 0.75)
 test.pred <- test.pred$data
 test.pred <- test.pred[order(test.pred$id), ]
 test.pred$id <- test.set
