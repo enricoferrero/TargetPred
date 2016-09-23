@@ -104,4 +104,8 @@ dev.off()
 
 # print stats
 summary(perm$acc)
+mean(perm$acc)
+sd(perm$acc)
 summary(perm$auc)
+mean(perm$auc)
+sd(perm$auc)
