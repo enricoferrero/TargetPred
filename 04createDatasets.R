@@ -83,19 +83,19 @@ PC12 <- ggplot(pca, aes(PC1, PC2)) +
         geom_point(aes(fill=factor(target)), shape=21, size=3, alpha=0.4) +
         xlab(paste0("PC1 (", pve[1], "% variance)")) +
         ylab(paste0("PC2 (", pve[2], "% variance)")) +
-        scale_fill_manual(values=c("forestgreen", "darkviolet"), name="Target", breaks=c(0, 1), labels=c("Yes", "Unknown")) +
+        scale_fill_manual(values=c("forestgreen", "darkviolet"), name=NULL, breaks=c(0, 1), labels=c("Target", "Non-target")) +
         theme_bw(14)
 PC13 <- ggplot(pca, aes(PC1, PC3)) +
         geom_point(aes(fill=factor(target)), shape=21, size=3, alpha=0.4) +
         xlab(paste0("PC1 (", pve[1], "% variance)")) +
         ylab(paste0("PC3 (", pve[3], "% variance)")) +
-        scale_fill_manual(values=c("forestgreen", "darkviolet"), name="Target", breaks=c(0, 1), labels=c("Yes", "Unknown")) +
+        scale_fill_manual(values=c("forestgreen", "darkviolet"), name=NULL, breaks=c(0, 1), labels=c("Target", "Non-target")) +
         theme_bw(14)
 PC23 <- ggplot(pca, aes(PC2, PC3)) +
         geom_point(aes(fill=factor(target)), shape=21, size=3, alpha=0.4) +
         xlab(paste0("PC2 (", pve[2], "% variance)")) +
         ylab(paste0("PC3 (", pve[3], "% variance)")) +
-        scale_fill_manual(values=c("forestgreen", "darkviolet"), name="Target", breaks=c(0, 1), labels=c("Yes", "Unknown")) +
+        scale_fill_manual(values=c("forestgreen", "darkviolet"), name=NULL, breaks=c(0, 1), labels=c("Target", "Non-target")) +
         theme_bw(14)
 png("../data/PCAh.png", width=18*300, height=5*300, res=300)
 grid.arrange(PC12, PC13, PC23, nrow=1)
@@ -110,7 +110,7 @@ hmcols <- colorRampPalette(brewer.pal(9, "YlGnBu"))(255)
 sidecols <- c("forestgreen", "darkviolet")[dataset$target]
 png("../data/Heatmap.png", width=8*300, height=10*300, res=300)
 heatmap.2(as.matrix(dataset[1:5]), hclustfun=hcfun, Rowv=TRUE, Colv=TRUE, dendrogram="both", scale="none", col=hmcols, RowSideColors=sidecols, density.info="none", trace="none", key=TRUE, srtCol=315, adjCol=c(0, 1), labRow="", lhei=c(2,8), margins=c(12,8))
-legend("topright", legend=c("Yes", "Unknown"), fill=c("forestgreen", "darkviolet"), bty="n", title="Target", cex=0.9)
+legend("topright", legend=c("Target", "Non-target"), fill=c("forestgreen", "darkviolet"), bty="n", title=NULL, cex=0.9)
 dev.off()
 
 # t-SNE
@@ -122,8 +122,7 @@ png("../data/tSNE.png", width=10*300, height=10*300, res=300)
 print(
       ggplot(tsne, aes(D1, D2)) +
           geom_point(aes(fill=factor(target)), shape=21, size=3, alpha=0.4) +
-          scale_fill_manual(values=c("forestgreen", "darkviolet"), name="Target", breaks=c(0, 1), labels=c("Yes", "Unknown")) +
+          scale_fill_manual(values=c("forestgreen", "darkviolet"), name=NULL, breaks=c(0, 1), labels=c("Target", "Non-target")) +
           theme_bw(14)
 )
 dev.off()
-
