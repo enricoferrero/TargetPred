@@ -66,6 +66,11 @@ for (i in 1:n) {
     perm$oddsratio[i] <- res$estimate
 }
 
+mean(perm$pvalue)
+sd(perm$pvalue)
+mean(perm$oddsratio)
+sd(perm$oddsratio)
+
 # histograms
 png("../data/HistogramPV.png", height=6*300, width=6*300, res=300)
 print(
