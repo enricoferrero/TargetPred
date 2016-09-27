@@ -33,9 +33,9 @@ train.set <- sample(no, size = round(0.8*no))
 test.set <- setdiff(seq(no), train.set)
 
 ## features
-fv <- generateFilterValuesData(classif.task, method=c("kruskal.test", "chi.squared", "information.gain"))
+fv <- generateFilterValuesData(classif.task, method=c("chi.squared", "information.gain"))
 saveRDS(fv, file.path("../data/fv.rds"))
-png(file.path("../data/Features.png"), height=6*300, width=10*300, res=300)
+png(file.path("../data/Features.png"), height=6*300, width=7*300, res=300)
 print(
     plotFilterValues(fv, sort="none") +
     geom_bar(aes(fill=method), stat="identity", colour="black") +
@@ -43,7 +43,7 @@ print(
     theme_bw(base_size=14) +
     theme(legend.position="none") +
     theme(axis.text.x = element_text(angle=45, hjust=1)) +
-    scale_fill_brewer(palette="Set2")
+    scale_fill_manual(values=c("tomato", "skyblue"))
 )
 dev.off()
 
