@@ -22,7 +22,7 @@ calcEnrichmentFisher <- function(set1, set2, universe) {
     b <- length(set1) - a
     c <- length(set2) - a
     d <- length(universe) - a - b - c
-    fisher <- fisher.test(matrix(c(a,b,c,d), nrow=2, ncol=2, byrow=TRUE), alternative="two.sided")
+    fisher <- fisher.test(matrix(c(a,b,c,d), nrow=2, ncol=2, byrow=TRUE), alternative="greater")
 }
 
 ### data ###
