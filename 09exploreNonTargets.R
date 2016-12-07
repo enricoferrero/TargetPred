@@ -21,6 +21,9 @@ test.set <- setdiff(seq(no), train.set)
 dataset <- getTaskData(classif.task)
 dataset$id <- 1:nrow(dataset)
 dataset$ensembl <- rownames(dataset)
+dataset.train <- getTaskData(subsetTask(classif.task, subset = train.set))
+dataset.train$id <- 1:nrow(dataset.train)
+dataset.train$ensembl <- rownames(dataset.train)
 
 # annotate resampling results
 res <- res$pred

@@ -20,19 +20,18 @@ test.set <- setdiff(seq(no), train.set)
 dataset <- getTaskData(classif.task)
 dataset$id <- 1:nrow(dataset)
 dataset$ensembl <- rownames(dataset)
+dataset.train <- getTaskData(subsetTask(classif.task, subset = train.set))
+dataset.train$id <- 1:nrow(dataset.train)
+dataset.train$ensembl <- rownames(dataset.train)
 
-# annotate resampling results
+# resampling results
 res <- res$pred$data
-res <- res[order(res$id), ]
-res$id <- train.set
 
-# annotate test results
+# test results
 test.pred <- test.pred$data
-test.pred <- test.pred[order(test.pred$id), ]
-test.pred$id <- test.set
 
 # merge and clean
-dataset.train <- merge(dataset, res, all=FALSE)
+dataset.train <- merge(dataset.train, res, all=FALSE)
 dataset.test <- merge(dataset, test.pred, all=FALSE)
 dataset <- merge(dataset.train, dataset.test, all=TRUE)
 dataset <- subset(dataset, truth == 1, c(ensembl, response))
