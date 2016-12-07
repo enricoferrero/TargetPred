@@ -28,6 +28,6 @@ ann <- getBM(attributes=c("ensembl_gene_id", "entrezgene", "external_gene_name")
 predres <- merge(pred$data, ann, by.x="row.names", by.y="ensembl_gene_id", all=TRUE)
 names(predres) <- c("Ensembl", "UnknownProb", "TargetProb", "Prediction", "Entrez", "Symbol")
 predres <- predres[c("Ensembl", "Entrez", "Symbol", "Prediction", "TargetProb", "UnknownProb")]
-write.csv(predres, file.path("../data/PredicitonResults.csv"), quote=FALSE, row.names=FALSE)
+write.csv(predres, file.path("../data/PredictionResults.csv"), quote=FALSE, row.names=FALSE)
 
 parallelStop()
