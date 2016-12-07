@@ -31,6 +31,8 @@ completeset$animal_model[completeset$animal_model < 0.4] <- 0
 completeset <- aggregate(completeset[3:ncol(completeset)], by=list(EnsemblId=completeset$EnsemblId), FUN=mean)
 # merge
 completeset <- merge(genes, completeset, by=1, all=FALSE)
+rownames(completeset) <- completeset$ensembl_gene_id
+completeset$ensembl_gene_id <- NULL
 saveRDS(completeset, file.path("../data/completeset.rds"))
 
 # read pharmaprojects data for target information
