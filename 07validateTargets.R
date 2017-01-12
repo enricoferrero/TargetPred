@@ -31,7 +31,7 @@ genes <- getBM(attributes="ensembl_gene_id", filters=c("chromosome_name", "bioty
 genes <- unique(genes$ensembl_gene_id)
 
 # prediction results
-predres <- read.csv("../data/PredicitonResults.csv")
+predres <- read.csv("../data/PredictionResults.csv")
 predres <- subset(predres, Prediction == 1)
 
 # training and test sets (to remove from text mining results)
@@ -52,7 +52,7 @@ res$p.value
 res$estimate
 
 # Venn diagram
-png(file.path("../data/Venn.png"), height=10*300, width=10*300, res=300)
+png(file.path("../data/VennResults.png"), height=10*300, width=10*300, res=300)
 plot(Venn(list("Predictions"=set1, "Text mining"=set2)))
 dev.off()
 

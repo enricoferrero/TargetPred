@@ -2,6 +2,7 @@
 library(mlr)
 library(parallel)
 library(parallelMap)
+library(Vennerable)
 
 ### options ###
 set.seed(986, kind="L'Ecuyer-CMRG")
@@ -214,4 +215,29 @@ inf.mod <- inf.mod$learner.model
 # plot tree
 png(file.path("../data/DecisionTree.png"), height=10*300, width=10*300, res=300)
 rpart.plot::prp(inf.mod, type=2, extra=101, varlen=0, box.col=c(adjustcolor("darkviolet", alpha.f=0.4), adjustcolor("forestgreen", alpha.f=0.4))[inf.mod$frame$yval])
+dev.off()
+
+### compare classifiers' predictions
+rf.res <- bmrk$results$TargetPred$`Random Forest`$pred$data
+svm.res <- bmrk$results$TargetPred$`Support Vector Machine`$pred$data
+nn.res <- bmrk$results$TargetPred$`Neural Network`$pred$data
+gbm.res <- bmrk$results$TargetPred$`Gradient Boosting Machine`$pred$data
+# positive predictions
+truth.1 <- subset(rf.res, truth == 1, id, drop = TRUE)
+rf.1 <- subset(rf.res, response == 1, id, drop = TRUE)
+svm.1 <- subset(svm.res, response == 1, id, drop = TRUE)
+nn.1 <- subset(nn.res, response == 1, id, drop = TRUE)
+gbm.1 <- subset(gbm.res, response == 1, id, drop = TRUE)
+# negative predictions drop = TRUE)
+truth.0 <- subset(rf.res, truth == 0, id, drop = TRUE)
+rf.0 <- subset(rf.res, response == 0, id, drop = TRUE)
+svm.0 <- subset(svm.res, response == 0, id, drop = TRUE)
+nn.0 <- subset(nn.res, response == 0, id, drop = TRUE)
+gbm.0 <- subset(gbm.res, response == 0, id, drop = TRUE)
+# Venn diagrams
+png(file.path("../data/VennTargets.png"), height=10*300, width=10*300, res=300)
+plot(Venn(list("Random Forest" = rf.1, "Support Vector Machine" = svm.1, "Neural Network" = nn.1, "Gradient Boosting Machine" = gbm.1)), doWeights = FALSE)
+dev.off()
+png(file.path("../data/VennNontargets.png"), height=10*300, width=10*300, res=300)
+plot(Venn(list("Random Forest" = rf.0, "Support Vector Machine" = svm.0, "Neural Network" = nn.0, "Gradient Boosting Machine" = gbm.0)), doWeights = FALSE)
 dev.off()
