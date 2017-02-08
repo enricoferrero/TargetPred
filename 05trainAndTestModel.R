@@ -36,12 +36,12 @@ test.set <- setdiff(seq(no), train.set)
 ## features
 fv <- generateFilterValuesData(classif.task, method=c("chi.squared", "information.gain"))
 saveRDS(fv, file.path("../data/fv.rds"))
-png(file.path("../data/Features.png"), height=6*300, width=7*300, res=300)
+png(file.path("../data/Features.png"), height=8*300, width=8*300, res=300)
 print(
     plotFilterValues(fv, sort="none") +
     geom_bar(aes(fill=method), stat="identity", colour="black") +
     ggtitle("") +
-    theme_bw(base_size=14) +
+    theme_bw(base_size=24) +
     theme(legend.position="none") +
     theme(axis.text.x = element_text(angle=45, hjust=1)) +
     scale_fill_manual(values=c("tomato", "skyblue"))
@@ -125,14 +125,14 @@ parallelStop()
 # boxplots of mean misclassification error
 perf <- getBMRPerformances(bmrk, as.df=TRUE)
 perf <- perf[c("learner.id", "mmce")]
-png(file.path("../data/BenchmarkMmceBoxplots.png"), height=10*300, width=10*300, res=300)
+png(file.path("../data/BenchmarkMmceBoxplots.png"), height=8*300, width=10*300, res=300)
 print(
       ggplot(data=perf, aes(x=learner.id, y=mmce)) +
           geom_boxplot(aes(fill=learner.id)) +
           xlab("") +
           ylab("Misclassification error") +
           scale_fill_brewer(palette="Set1", name="Classifier") +
-          theme_bw(base_size=14) +
+          theme_bw(base_size=24) +
           theme(axis.text.x=element_blank()) +
           theme(axis.ticks.x=element_blank())
 )
@@ -142,7 +142,7 @@ dev.off()
 perf <- getBMRPerformances(bmrk, as.df=TRUE)
 names(perf)[5:ncol(perf)] <- c("Accuracy", "AUC", "Recall/Sensitivity", "Specificity", "Precision", "F1")
 perf <- reshape(perf, varying=names(perf)[5:ncol(perf)], v.names="value", timevar="measure", times=names(perf)[5:ncol(perf)], direction="long")
-png(file.path("../data/BenchmarkOtherBoxplots.png"), height=10*300, width=10*300, res=300)
+png(file.path("../data/BenchmarkOtherBoxplots.png"), height=10*300, width=13*300, res=300)
 print(
       ggplot(data=perf, aes(x=learner.id, y=value)) +
           geom_boxplot(aes(fill=learner.id)) +
@@ -150,7 +150,7 @@ print(
           xlab("Measure") +
           ylab("Performance") +
           scale_fill_brewer(palette="Set1", name="Classifier") +
-          theme_bw(base_size=14) +
+          theme_bw(base_size=24) +
           theme(axis.text.x=element_blank()) +
           theme(axis.ticks.x=element_blank())
 )
@@ -158,7 +158,7 @@ dev.off()
 
 # ROC curves
 roc <- generateThreshVsPerfData(bmrk, measures=list(fpr, tpr))
-png(file.path("../data/BenchmarkROC.png"), height=10*300, width=10*300, res=300)
+png(file.path("../data/BenchmarkROC.png"), height=8*300, width=12*300, res=300)
 print(
       ggplot(data=roc$data, aes(x=fpr, y=tpr)) +
           geom_path(aes(colour=learner), size=1.5) +
@@ -166,13 +166,13 @@ print(
           xlab("False positive rate") +
           ylab("True positive rate") +
           scale_colour_brewer(palette="Set1", name="Classifier") +
-          theme_bw(base_size=14)
+          theme_bw(base_size=24)
 )
 dev.off()
 
 # PR curves
 pr <- generateThreshVsPerfData(bmrk, measures=list(tpr, ppv))
-png(file.path("../data/BenchmarkPR.png"), height=10*300, width=10*300, res=300)
+png(file.path("../data/BenchmarkPR.png"), height=8*300, width=12*300, res=300)
 print(
       ggplot(data=pr$data, aes(x=tpr, y=ppv)) +
           geom_path(aes(colour=learner), size=1.5) +
@@ -181,7 +181,7 @@ print(
           xlim(0, 1) + 
           ylim(0, 1) +
           scale_colour_brewer(palette="Set1", name="Classifier") +
-          theme_bw(base_size=14)
+          theme_bw(base_size=24)
 )
 dev.off()
 
@@ -213,8 +213,8 @@ saveRDS(inf.mod, file.path("../data/inf.mod.rds"))
 inf.mod <- inf.mod$learner.model
 
 # plot tree
-png(file.path("../data/DecisionTree.png"), height=10*300, width=10*300, res=300)
-rpart.plot::prp(inf.mod, type=2, extra=101, varlen=0, box.col=c(adjustcolor("darkviolet", alpha.f=0.4), adjustcolor("forestgreen", alpha.f=0.4))[inf.mod$frame$yval])
+png(file.path("../data/DecisionTree.png"), height=8*300, width=10*300, res=300)
+rpart.plot::prp(inf.mod, type=2, extra=101, varlen=0, box.col=c(adjustcolor("darkviolet", alpha.f=0.4), adjustcolor("forestgreen", alpha.f=0.4))[inf.mod$frame$yval], cex = 1.2)
 dev.off()
 
 ### compare classifiers' predictions
@@ -235,9 +235,9 @@ svm.0 <- subset(svm.res, response == 0, id, drop = TRUE)
 nn.0 <- subset(nn.res, response == 0, id, drop = TRUE)
 gbm.0 <- subset(gbm.res, response == 0, id, drop = TRUE)
 # Venn diagrams
-png(file.path("../data/VennTargets.png"), height=10*300, width=10*300, res=300)
+png(file.path("../data/VennTargets.png"), height=6*300, width=6*300, res=300)
 plot(Venn(list("Random Forest" = rf.1, "Support Vector Machine" = svm.1, "Neural Network" = nn.1, "Gradient Boosting Machine" = gbm.1)), doWeights = FALSE)
 dev.off()
-png(file.path("../data/VennNontargets.png"), height=10*300, width=10*300, res=300)
+png(file.path("../data/VennNontargets.png"), height=6*300, width=6*300, res=300)
 plot(Venn(list("Random Forest" = rf.0, "Support Vector Machine" = svm.0, "Neural Network" = nn.0, "Gradient Boosting Machine" = gbm.0)), doWeights = FALSE)
 dev.off()

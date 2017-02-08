@@ -78,7 +78,7 @@ print(
 		  geom_histogram(colour="black", fill="lightskyblue", bins=100) +
 		  xlab("-Log10 p-value") + 
 		  ylab("Count") +
-          theme_bw(14)
+          theme_bw(24)
 )
 dev.off()
 png("../data/HistogramOR.png", height=6*300, width=6*300, res=300)
@@ -87,6 +87,6 @@ print(
 		  geom_histogram(colour="black", fill="lightseagreen", bins=100) +
 		  xlab("Odds ratio") + 
 		  ylab("Count") +
-          theme_bw(14)
+          theme_bw(24)
 )
 dev.off()

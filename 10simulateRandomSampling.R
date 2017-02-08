@@ -89,7 +89,7 @@ print(
 		  geom_histogram(colour="black", fill="goldenrod1", bins=100) +
 		  xlab("Accuracy") + 
 		  ylab("Count") +
-          theme_bw(14)
+          theme_bw(24)
 )
 dev.off()
 png("../data/RandomSamplingAUC.png", height=6*300, width=6*300, res=300)
@@ -98,7 +98,7 @@ print(
 		  geom_histogram(colour="black", fill="darkorange1", bins=100) +
 		  xlab("AUC") + 
 		  ylab("Count") +
-          theme_bw(14)
+          theme_bw(24)
 )
 dev.off()
 
