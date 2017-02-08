@@ -119,7 +119,7 @@ uniqueset <- dataset[!duplicated(dataset[1:5]),]
 tsne <- Rtsne(as.matrix(uniqueset[1:5]))
 tsne <- cbind(tsne$Y, uniqueset[6])
 names(tsne) <- c("x", "y", "target")
-png("../data/tSNE.png", width=10*300, height=9*300, res=300)
+png("../data/tSNE.png", width=10*300, height=8*300, res=300)
 print(
       ggplot(tsne, aes(x, y)) +
           geom_point(aes(fill=factor(target)), shape=21, size=3, alpha=0.4) +
