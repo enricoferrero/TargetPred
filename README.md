@@ -1,5 +1,4 @@
-# TargetPred
-### In Silico Prediction of Novel Therapeutic Targets Using Gene – Disease Association Data
+## In Silico Prediction of Novel Therapeutic Targets Using Gene – Disease Association Data
 
 Scripts can be run sequentially to replicate the analysis.
 
