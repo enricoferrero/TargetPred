@@ -13,11 +13,11 @@ type="protein_coding"
 
 ### data ###
 predictionset <- readRDS(file.path("../data/predictionset.rds"))
-mod <- readRDS(file.path("../data/mod.rds"))
+gbm.mod <- readRDS(file.path("../data/gbm.mod.rds"))
 
 ### predict ###
-pred <- predict(mod, newdata=predictionset)
-pred <- setThreshold(pred, 0.75)
+pred <- predict(gbm.mod, newdata=predictionset)
+pred <- setThreshold(pred, 0.9)
 saveRDS(pred, file.path("../data/pred.rds"))
 
 ### annotate ###

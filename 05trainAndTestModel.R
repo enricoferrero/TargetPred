@@ -1,15 +1,17 @@
+options(mc.preschedule = FALSE)
 ### libraries ###
 library(mlr)
 library(parallel)
 library(parallelMap)
+parallelStartMulticore(detectCores() - 1)
 library(Vennerable)
 
 ### options ###
 set.seed(986, kind="L'Ecuyer-CMRG")
-cv.n <- 10
+cv.inner.n <- 4
+cv.outer.n <- 4
 bag.n <- 100
 
-### model selection
 ## data
 dataset <- readRDS(file.path("../data/dataset.rds"))
 
@@ -18,18 +20,15 @@ classif.task <- makeClassifTask(id="TargetPred", data=dataset, target="target", 
 # simply remove constatn features (if any)
 classif.task <- removeConstantFeatures(classif.task)
 saveRDS(classif.task, file.path("../data/classif.task.rds"))
-
 ## resampling strategy
-rdesc <- makeResampleDesc("CV", iters=cv.n)
-
+rdesc.inner <- makeResampleDesc("CV", iters=cv.inner.n, stratify = TRUE)
+rdesc.outer <- makeResampleDesc("CV", iters=cv.outer.n, stratify = TRUE)
 ## tuning control
 ctrl <- makeTuneControlGrid()
-
 ## number of features and observations
 nf <- getTaskNFeats(classif.task)
 no <- getTaskSize(classif.task)
-
-# training and test set
+## training and test set
 train.set <- sample(no, size = round(0.8*no))
 test.set <- setdiff(seq(no), train.set)
 
@@ -48,17 +47,15 @@ print(
 )
 dev.off()
 
-## tuning
-parallelStartMulticore(detectCores())
+## classifiers
+## these are created with makeTuneWrapper() so that during the training a nested cross-validation procedure is used: parameters are tuned in an inner CV loop and the performance is estimated in the outer loop.
 
 # decision tree
 dt.lrn <- makeLearner("classif.rpart")
 dt.ps <- makeParamSet(
                       makeDiscreteParam("cp", values = c(0.001, 0.0025, 0.005, 0.01, 0.025, 0.05))
                       )
-dt.tun <- tuneParams(dt.lrn, subsetTask(classif.task, subset=train.set), rdesc, par.set=dt.ps, control=ctrl)
-saveRDS(dt.tun, file.path("../data/dt.tun.rds"))
-dt.lrn <- makeLearner("classif.rpart", par.vals = list(cp=dt.tun$x$cp))
+dt.lrn <- makeTuneWrapper(dt.lrn, rdesc.inner, par.set=dt.ps, control=ctrl)
 dt.lrn <- setPredictType(dt.lrn, predict.type="prob")
 dt.lrn <- setId(dt.lrn, "Decision Tree")
 
@@ -68,59 +65,55 @@ rf.ps <- makeParamSet(
                       makeDiscreteParam("ntree", values = c(250, 500, 1000, 2500, 5000)),
                       makeDiscreteParam("mtry", values = c(2, 3, 4, 5))
 )
-rf.tun <- tuneParams(rf.lrn, subsetTask(classif.task, subset=train.set), rdesc, par.set=rf.ps, control=ctrl)
-saveRDS(rf.tun, file.path("../data/rf.tun.rds"))
-rf.lrn <- makeLearner("classif.randomForest", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
+rf.lrn <- makeTuneWrapper(rf.lrn, rdesc.inner, par.set=rf.ps, control=ctrl)
 rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
 rf.lrn <- setId(rf.lrn, "Random Forest")
 
 # neural network
 nn.lrn <- makeLearner("classif.nnet", MaxNWts=5000, trace=FALSE)
+nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
 nn.ps <- makeParamSet(
                       makeDiscreteParam("size", values = c(2, 3, 5, 7, 10)),
                       makeDiscreteParam("decay", values = c(0.5, 0.25, 0.1, 0))
 )
-nn.tun <- tuneParams(nn.lrn, subsetTask(classif.task, subset=train.set), rdesc, par.set=nn.ps, control=ctrl)
-saveRDS(nn.tun, file.path("../data/nn.tun.rds"))
-nn.lrn <- makeLearner("classif.nnet", MaxNWts=5000, trace=FALSE, size=nn.tun$x$size, decay=nn.tun$x$decay)
-nn.lrn <- makeBaggingWrapper(nn.lrn, bw.iters=bag.n)
+nn.lrn <- makeTuneWrapper(nn.lrn, rdesc.inner, par.set=nn.ps, control=ctrl)
 nn.lrn <- setPredictType(nn.lrn, predict.type="prob")
 nn.lrn <- setId(nn.lrn, "Neural Network")
 
 # support vector machine
 svm.lrn <- makeLearner("classif.svm", kernel="radial")
+svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
 svm.ps <- makeParamSet(
                         makeDiscreteParam("gamma", values = 2^(-2:2)),
                         makeDiscreteParam("cost", values = 2^(-2:2))
 )
-svm.tun <- tuneParams(svm.lrn, subsetTask(classif.task, subset=train.set), rdesc, par.set=svm.ps, control=ctrl)
-saveRDS(svm.tun, file.path("../data/svm.tun.rds"))
-svm.lrn <- makeLearner("classif.svm", kernel="radial", cost=svm.tun$x$cost, gamma=svm.tun$x$gamma)
-svm.lrn <- makeBaggingWrapper(svm.lrn, bw.iters=bag.n)
+svm.lrn <- makeTuneWrapper(svm.lrn, rdesc.inner, par.set=svm.ps, control=ctrl)
 svm.lrn <- setPredictType(svm.lrn, predict.type="prob")
 svm.lrn <- setId(svm.lrn, "Support Vector Machine")
 
 # gradient boosting machine
 gbm.lrn <- makeLearner("classif.gbm", distribution="adaboost")
+gbm.lrn <- makeBaggingWrapper(gbm.lrn, bw.iters=bag.n)
 gbm.ps <- makeParamSet(
                       makeDiscreteParam("n.trees", values = c(250, 500, 1000, 2500, 5000)),
                       makeDiscreteParam("interaction.depth", values = c(2, 3, 4, 5))
 )
-gbm.tun <- tuneParams(gbm.lrn, subsetTask(classif.task, subset=train.set), rdesc, par.set=gbm.ps, control=ctrl)
-saveRDS(gbm.tun, file.path("../data/gbm.tun.rds"))
-gbm.lrn <- makeLearner("classif.gbm", distribution="adaboost", n.trees=gbm.tun$x$n.trees, interaction.depth=gbm.tun$x$interaction.depth)
-gbm.lrn <- makeBaggingWrapper(gbm.lrn, bw.iters=bag.n)
+gbm.lrn <- makeTuneWrapper(gbm.lrn, rdesc.inner, par.set=gbm.ps, control=ctrl)
 gbm.lrn <- setPredictType(gbm.lrn, predict.type="prob")
 gbm.lrn <- setId(gbm.lrn, "Gradient Boosting Machine")
 
-parallelStop()
+## inference
+dt.mod <- train(dt.lrn, classif.task, subset=train.set)
+saveRDS(dt.mod, file.path("../data/dt.mod.rds"))
+dt.mod <- dt.mod$learner.model$next.model$learner.model
+# plot tree
+png(file.path("../data/DecisionTree.png"), height=8*300, width=10*300, res=300)
+rpart.plot::prp(inf.mod, type=2, extra=101, varlen=0, box.col=c(adjustcolor("darkviolet", alpha.f=0.4), adjustcolor("forestgreen", alpha.f=0.4))[inf.mod$frame$yval], cex = 1.2)
+dev.off()
 
 ## benchmark
-parallelStartMulticore(detectCores(), level="mlr.resample")
 lrns <- list(rf.lrn, nn.lrn, svm.lrn, gbm.lrn)
-bmrk <- benchmark(lrns, subsetTask(classif.task, subset=train.set), rdesc, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
-xlsx::write.xlsx(getBMRAggrPerformances(bmrk, as.df=TRUE), file.path("../data/Results.xlsx"), sheetName="Benchmark", row.names=FALSE, col.names=TRUE, append=FALSE)
-parallelStop()
+bmrk <- benchmark(lrns, subsetTask(classif.task, subset=train.set), rdesc.outer, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
 
 # boxplots of mean misclassification error
 perf <- getBMRPerformances(bmrk, as.df=TRUE)
@@ -185,55 +178,27 @@ print(
 )
 dev.off()
 
-#### model testing
-
-## cross-validation
-res <- bmrk$results$TargetPred$`Random Forest`
-saveRDS(res, file.path("../data/res.rds"))
-
-# export
-xlsx::write.xlsx(res$aggr, file.path("../data/Results.xlsx"), sheetName="CV Performance Measures", row.names=TRUE, col.names=FALSE, append=TRUE)
-xlsx::write.xlsx(as.data.frame(getConfMatrix(res$pred)), file.path("../data/Results.xlsx"), sheetName="CV Confusion Matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
-
-## train model
-mod <- train(rf.lrn, classif.task, subset=train.set)
-saveRDS(mod, file.path("../data/mod.rds"))
-
-## evaluate performance on test set
-test.pred <- predict(mod, task=classif.task, subset=test.set)
-saveRDS(test.pred, file.path("../data/test.pred.rds"))
-
-# export
-xlsx::write.xlsx(performance(test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), file.path("../data/Results.xlsx"), sheetName="Test Performance Measures", row.names=TRUE, col.names=FALSE, append=TRUE)
-xlsx::write.xlsx(as.data.frame(getConfMatrix(test.pred)), file.path("../data/Results.xlsx"), sheetName="Test Confusion Matrix", row.names=TRUE, col.names=TRUE, append=TRUE)
-
-## train model
-inf.mod <- train(dt.lrn, classif.task, subset=train.set)
-saveRDS(inf.mod, file.path("../data/inf.mod.rds"))
-inf.mod <- inf.mod$learner.model
-
-# plot tree
-png(file.path("../data/DecisionTree.png"), height=8*300, width=10*300, res=300)
-rpart.plot::prp(inf.mod, type=2, extra=101, varlen=0, box.col=c(adjustcolor("darkviolet", alpha.f=0.4), adjustcolor("forestgreen", alpha.f=0.4))[inf.mod$frame$yval], cex = 1.2)
-dev.off()
-
-### compare classifiers' predictions
-rf.res <- bmrk$results$TargetPred$`Random Forest`$pred$data
-svm.res <- bmrk$results$TargetPred$`Support Vector Machine`$pred$data
-nn.res <- bmrk$results$TargetPred$`Neural Network`$pred$data
-gbm.res <- bmrk$results$TargetPred$`Gradient Boosting Machine`$pred$data
+## compare classifiers' predictions
+rf.res <- bmrk$results$TargetPred$`Random Forest`
+saveRDS(rf.res, file.path("../data/rf.res.rds"))
+svm.res <- bmrk$results$TargetPred$`Support Vector Machine`
+saveRDS(svm.res, file.path("../data/svm.res.rds"))
+nn.res <- bmrk$results$TargetPred$`Neural Network`
+saveRDS(nn.res, file.path("../data/nn.res.rds"))
+gbm.res <- bmrk$results$TargetPred$`Gradient Boosting Machine`
+saveRDS(gbm.res, file.path("../data/gbm.res.rds"))
 # positive predictions
-truth.1 <- subset(rf.res, truth == 1, id, drop = TRUE)
-rf.1 <- subset(rf.res, response == 1, id, drop = TRUE)
-svm.1 <- subset(svm.res, response == 1, id, drop = TRUE)
-nn.1 <- subset(nn.res, response == 1, id, drop = TRUE)
-gbm.1 <- subset(gbm.res, response == 1, id, drop = TRUE)
+truth.1 <- subset(rf.res$pred$data, truth == 1, id, drop = TRUE)
+rf.1 <- subset(rf.res$pred$data, response == 1, id, drop = TRUE)
+svm.1 <- subset(svm.res$pred$data, response == 1, id, drop = TRUE)
+nn.1 <- subset(nn.res$pred$data, response == 1, id, drop = TRUE)
+gbm.1 <- subset(gbm.res$pred$data, response == 1, id, drop = TRUE)
 # negative predictions drop = TRUE)
-truth.0 <- subset(rf.res, truth == 0, id, drop = TRUE)
-rf.0 <- subset(rf.res, response == 0, id, drop = TRUE)
-svm.0 <- subset(svm.res, response == 0, id, drop = TRUE)
-nn.0 <- subset(nn.res, response == 0, id, drop = TRUE)
-gbm.0 <- subset(gbm.res, response == 0, id, drop = TRUE)
+truth.0 <- subset(rf.res$pred$data, truth == 0, id, drop = TRUE)
+rf.0 <- subset(rf.res$pred$data, response == 0, id, drop = TRUE)
+svm.0 <- subset(svm.res$pred$data, response == 0, id, drop = TRUE)
+nn.0 <- subset(nn.res$pred$data, response == 0, id, drop = TRUE)
+gbm.0 <- subset(gbm.res$pred$data, response == 0, id, drop = TRUE)
 # Venn diagrams
 png(file.path("../data/VennTargets.png"), height=6*300, width=6*300, res=300)
 plot(Venn(list("Random Forest" = rf.1, "Neural Network" = nn.1, "Support Vector Machine" = svm.1, "Gradient Boosting Machine" = gbm.1)), doWeights = FALSE)
@@ -241,3 +206,31 @@ dev.off()
 png(file.path("../data/VennNontargets.png"), height=6*300, width=6*300, res=300)
 plot(Venn(list("Random Forest" = rf.0, "Neural Network" = nn.0, "Support Vector Machine" = svm.0, "Gradient Boosting Machine" = gbm.0)), doWeights = FALSE)
 dev.off()
+
+## train model
+rf.mod <- train(rf.lrn, classif.task, subset=train.set)
+saveRDS(rf.mod, file.path("../data/rf.mod.rds"))
+svm.mod <- train(svm.lrn, classif.task, subset=train.set)
+saveRDS(svm.mod, file.path("../data/svm.mod.rds"))
+nn.mod <- train(nn.lrn, classif.task, subset=train.set)
+saveRDS(nn.mod, file.path("../data/nn.mod.rds"))
+gbm.mod <- train(gbm.lrn, classif.task, subset=train.set)
+saveRDS(gbm.mod, file.path("../data/gbm.mod.rds"))
+
+## evaluate performance on test set
+rf.test.pred <- predict(rf.mod, task=classif.task, subset=test.set)
+saveRDS(rf.test.pred, file.path("../data/rf.test.pred.rds"))
+svm.test.pred <- predict(svm.mod, task=classif.task, subset=test.set)
+saveRDS(svm.test.pred, file.path("../data/svm.test.pred.rds"))
+nn.test.pred <- predict(nn.mod, task=classif.task, subset=test.set)
+saveRDS(nn.test.pred, file.path("../data/nn.test.pred.rds"))
+gbm.test.pred <- predict(gbm.mod, task=classif.task, subset=test.set)
+saveRDS(gbm.test.pred, file.path("../data/gbm.test.pred.rds"))
+
+## export performance measures
+# cross-validation
+cv.perf <- getBMRAggrPerformances(bmrk, as.df=TRUE)[-1]
+write.csv(cv.perf, "../data/crossvalidation.performance.csv", quote = FALSE, row.names=FALSE)
+# test
+test.perf <- cbind.data.frame(learner.id = c(rf.lrn$id, svm.lrn$id, nn.lrn$id, gbm.lrn$id), t(data.frame(rf = performance(rf.test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), svm = performance(svm.test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), nn = performance(nn.test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), gbm = performance(gbm.test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)))))
+write.csv(test.perf, "../data/test.performance.csv", quote = FALSE, row.names=FALSE)

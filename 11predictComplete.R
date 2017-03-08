@@ -13,10 +13,10 @@ type="protein_coding"
 
 ### data ###
 completeset <- readRDS(file.path("../data/completeset.rds"))
-mod <- readRDS(file.path("../data/mod.rds"))
+gbm.mod <- readRDS(file.path("../data/gbm.mod.rds"))
 
 ### predict ###
-complete.pred <- predict(mod, newdata=completeset)
+complete.pred <- predict(gbm.mod, newdata=completeset)
 complete.pred <- setThreshold(complete.pred, 0.75)
 saveRDS(complete.pred, file.path("../data/complete.pred.rds"))
 

@@ -11,7 +11,6 @@ ensembl <- useMart("ENSEMBL_MART_ENSEMBL", "hsapiens_gene_ensembl", host="mar201
 chr <- c(1:22, "X", "Y", "MT")
 type="protein_coding"
 
-
 # read completeset
 completeset <- readRDS("../data/completeset.rds")
 
@@ -36,6 +35,9 @@ pharmaprojects <- getBM(
 positive <- unique(pharmaprojects)
 positive <- completeset[completeset$ensembl_gene_id %in% positive$ensembl_gene_id, ]
 positive$target <- 1
+
+# tuned model
+gbm.mod <- readRDS("../data/gbm.mod.rds")
 
 # permutation test
 n <- 10000
@@ -66,18 +68,17 @@ perm <- foreach (i = 1:n, .combine = rbind) %dopar% {
     train.set <- sample(no, size = round(0.8*no))
     test.set <- setdiff(seq(no), train.set)
 
-    # random forest
-    rf.tun <- readRDS("../data/rf.tun.rds")
-    rf.lrn <- makeLearner("classif.randomForest", par.vals = list(ntree=rf.tun$x$ntree, mtry=rf.tun$x$mtry))
-    rf.lrn <- setPredictType(rf.lrn, predict.type="prob")
-    rf.lrn <- setId(rf.lrn, "Random Forest")
+    # gradient boosting machine
+    gbm.lrn <- makeLearner("classif.gbm", distribution="adaboost", n.trees = getTuneResult(gbm.mod)$x$n.trees, interaction.depth = getTuneResult(gbm.mod)$x$interaction.depth)
+    gbm.lrn <- setPredictType(gbm.lrn, predict.type="prob")
+    gbm.lrn <- setId(gbm.lrn, "Gradient Boosting Machine")
 
     ## train model
-    mod <- train(rf.lrn, classif.task, subset=train.set)
+    gbm.mod <- train(gbm.lrn, classif.task, subset=train.set)
 
     ## evaluate performance on test set
-    test.pred <- predict(mod, task=classif.task, subset=test.set)
-    test.pred <- performance(test.pred, measures=list(acc, auc))
+    gbm.test.pred <- predict(gbm.mod, task=classif.task, subset=test.set)
+    gbm.test.pred <- performance(gbm.test.pred, measures=list(acc, auc))
 
 }
 

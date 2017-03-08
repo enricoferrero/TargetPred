@@ -5,8 +5,8 @@ set.seed(986, kind="L'Ecuyer-CMRG")
 
 # load data
 classif.task <- readRDS("../data/classif.task.rds")
-res <- readRDS("../data/res.rds")
-test.pred <- readRDS("../data/test.pred.rds")
+gbm.res <- readRDS("../data/gbm.res.rds")
+gbm.test.pred <- readRDS("../data/gbm.test.pred.rds")
 
 ## number of features and observations
 nf <- getTaskNFeats(classif.task)
@@ -25,14 +25,14 @@ dataset.train$id <- 1:nrow(dataset.train)
 dataset.train$ensembl <- rownames(dataset.train)
 
 # resampling results
-res <- res$pred$data
+gbm.res <- gbm.res$pred$data
 
 # test results
-test.pred <- test.pred$data
+gbm.test.pred <- gbm.test.pred$data
 
 # merge and clean
-dataset.train <- merge(dataset.train, res, all=FALSE)
-dataset.test <- merge(dataset, test.pred, all=FALSE)
+dataset.train <- merge(dataset.train, gbm.res, all=FALSE)
+dataset.test <- merge(dataset, gbm.test.pred, all=FALSE)
 dataset <- merge(dataset.train, dataset.test, all=TRUE)
 dataset <- subset(dataset, truth == 1, c(ensembl, response))
 
