@@ -18,6 +18,7 @@ gbm.mod <- readRDS(file.path("../data/gbm.mod.rds"))
 ### predict ###
 complete.pred <- predict(gbm.mod, newdata=completeset)
 complete.pred <- setThreshold(complete.pred, 0.75)
+rownames(complete.pred$data) <- completeset$ensembl_gene_id
 saveRDS(complete.pred, file.path("../data/complete.pred.rds"))
 
 ### annotate ###

@@ -108,7 +108,7 @@ saveRDS(dt.mod, file.path("../data/dt.mod.rds"))
 dt.mod <- dt.mod$learner.model$next.model$learner.model
 # plot tree
 png(file.path("../data/DecisionTree.png"), height=8*300, width=10*300, res=300)
-rpart.plot::prp(inf.mod, type=2, extra=101, varlen=0, box.col=c(adjustcolor("darkviolet", alpha.f=0.4), adjustcolor("forestgreen", alpha.f=0.4))[inf.mod$frame$yval], cex = 1.2)
+rpart.plot::prp(dt.mod, type=2, extra=101, varlen=0, box.col=c(adjustcolor("darkviolet", alpha.f=0.4), adjustcolor("forestgreen", alpha.f=0.4))[dt.mod$frame$yval], cex = 1.2)
 dev.off()
 
 ## benchmark
