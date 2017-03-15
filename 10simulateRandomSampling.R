@@ -37,7 +37,7 @@ positive <- completeset[completeset$ensembl_gene_id %in% positive$ensembl_gene_i
 positive$target <- 1
 
 # tuned model
-gbm.mod <- readRDS("../data/gbm.mod.rds")
+nn.mod <- readRDS("../data/nn.mod.rds")
 
 # permutation test
 n <- 10000
@@ -68,17 +68,17 @@ perm <- foreach (i = 1:n, .combine = rbind) %dopar% {
     train.set <- sample(no, size = round(0.8*no))
     test.set <- setdiff(seq(no), train.set)
 
-    # gradient boosting machine
-    gbm.lrn <- makeLearner("classif.gbm", distribution="adaboost", n.trees = getTuneResult(gbm.mod)$x$n.trees, interaction.depth = getTuneResult(gbm.mod)$x$interaction.depth)
-    gbm.lrn <- setPredictType(gbm.lrn, predict.type="prob")
-    gbm.lrn <- setId(gbm.lrn, "Gradient Boosting Machine")
+    # neural network
+    nn.lrn <- makeLearner("classif.nnet", MaxNWts = 5000, trace = FALSE, size = getTuneResult(nn.mod)$x$size, decay = getTuneResult(nn.mod)$x$decay)
+    nn.lrn <- setPredictType(nn.lrn, predict.type="prob")
+    nn.lrn <- setId(nn.lrn, "Neural Network")
 
     ## train model
-    gbm.mod <- train(gbm.lrn, classif.task, subset=train.set)
+    nn.mod <- train(nn.lrn, classif.task, subset=train.set)
 
     ## evaluate performance on test set
-    gbm.test.pred <- predict(gbm.mod, task=classif.task, subset=test.set)
-    gbm.test.pred <- performance(gbm.test.pred, measures=list(acc, auc))
+    nn.test.pred <- predict(nn.mod, task=classif.task, subset=test.set)
+    nn.test.pred <- performance(nn.test.pred, measures=list(acc, auc))
 
 }
 
@@ -90,6 +90,7 @@ print(
 		  geom_histogram(colour="black", fill="goldenrod1", bins=100) +
 		  xlab("Accuracy") + 
 		  ylab("Count") +
+          xlim(0.6, 0.8) +
           theme_bw(24)
 )
 dev.off()
@@ -99,6 +100,7 @@ print(
 		  geom_histogram(colour="black", fill="darkorange1", bins=100) +
 		  xlab("AUC") + 
 		  ylab("Count") +
+          xlim(0.6, 0.9) +
           theme_bw(24)
 )
 dev.off()

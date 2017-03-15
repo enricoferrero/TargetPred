@@ -5,8 +5,8 @@ set.seed(986, kind="L'Ecuyer-CMRG")
 
 # load data
 classif.task <- readRDS("../data/classif.task.rds")
-gbm.res <- readRDS("../data/gbm.res.rds")
-gbm.test.pred <- readRDS("../data/gbm.test.pred.rds")
+nn.res <- readRDS("../data/nn.res.rds")
+nn.test.pred <- readRDS("../data/nn.test.pred.rds")
 pred <- readRDS("../data/pred.rds")
 
 ## number of features and observations
@@ -26,19 +26,19 @@ dataset.train$id <- 1:nrow(dataset.train)
 dataset.train$ensembl <- rownames(dataset.train)
 
 # annotate resampling results
-gbm.res <- gbm.res$pred
-gbm.res <- gbm.res$data
-gbm.res <- gbm.res[order(gbm.res$id), ]
-gbm.res$id <- train.set
+nn.res <- nn.res$pred
+nn.res <- nn.res$data
+nn.res <- nn.res[order(nn.res$id), ]
+nn.res$id <- train.set
 
 # annotate test results
-gbm.test.pred <- gbm.test.pred$data
-gbm.test.pred <- gbm.test.pred[order(gbm.test.pred$id), ]
-gbm.test.pred$id <- test.set
+nn.test.pred <- nn.test.pred$data
+nn.test.pred <- nn.test.pred[order(nn.test.pred$id), ]
+nn.test.pred$id <- test.set
 
 # merge and clean
-dataset.train <- merge(dataset, gbm.res, all=FALSE)
-dataset.test <- merge(dataset, gbm.test.pred, all=FALSE)
+dataset.train <- merge(dataset, nn.res, all=FALSE)
+dataset.test <- merge(dataset, nn.test.pred, all=FALSE)
 dataset <- merge(dataset.train, dataset.test, all=TRUE)
 dataset <- subset(dataset, truth == 0, c(ensembl, response))
 

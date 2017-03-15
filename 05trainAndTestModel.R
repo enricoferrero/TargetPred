@@ -112,6 +112,7 @@ rpart.plot::prp(dt.mod, type=2, extra=101, varlen=0, box.col=c(adjustcolor("dark
 dev.off()
 
 ## benchmark
+set.seed(986, kind="L'Ecuyer-CMRG")
 lrns <- list(rf.lrn, nn.lrn, svm.lrn, gbm.lrn)
 bmrk <- benchmark(lrns, subsetTask(classif.task, subset=train.set), rdesc.outer, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1))
 
@@ -208,6 +209,7 @@ plot(Venn(list("Random Forest" = rf.0, "Neural Network" = nn.0, "Support Vector 
 dev.off()
 
 ## train model
+set.seed(986, kind="L'Ecuyer-CMRG")
 rf.mod <- train(rf.lrn, classif.task, subset=train.set)
 saveRDS(rf.mod, file.path("../data/rf.mod.rds"))
 svm.mod <- train(svm.lrn, classif.task, subset=train.set)
@@ -227,10 +229,14 @@ saveRDS(nn.test.pred, file.path("../data/nn.test.pred.rds"))
 gbm.test.pred <- predict(gbm.mod, task=classif.task, subset=test.set)
 saveRDS(gbm.test.pred, file.path("../data/gbm.test.pred.rds"))
 
-## export performance measures
+## export performance measures and confusion matrices
 # cross-validation
 cv.perf <- getBMRAggrPerformances(bmrk, as.df=TRUE)[-1]
 write.csv(cv.perf, "../data/crossvalidation.performance.csv", quote = FALSE, row.names=FALSE)
+cv.confmat <- as.data.frame(getConfMatrix(bmrk$results$TargetPred$`Neural Network`$pred))
+write.csv(cv.confmat, "../data/crossvalidation.confusionmatrix.csv", quote = FALSE, row.names = TRUE)
 # test
-test.perf <- cbind.data.frame(learner.id = c(rf.lrn$id, svm.lrn$id, nn.lrn$id, gbm.lrn$id), t(data.frame(rf = performance(rf.test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), svm = performance(svm.test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), nn = performance(nn.test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), gbm = performance(gbm.test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)))))
+test.perf <- cbind.data.frame(learner.id = c(rf.lrn$id, nn.lrn$id, svm.lrn$id, gbm.lrn$id), t(data.frame(rf = performance(rf.test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), nn = performance(nn.test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), svm = performance(svm.test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)), gbm = performance(gbm.test.pred, measures=list(mmce, acc, auc, tpr, tnr, ppv, f1)))))
 write.csv(test.perf, "../data/test.performance.csv", quote = FALSE, row.names=FALSE)
+test.confmat <- as.data.frame(getConfMatrix(nn.test.pred))
+write.csv(test.confmat, "../data/test.confusionmatrix.csv", quote = FALSE, row.names = TRUE)
